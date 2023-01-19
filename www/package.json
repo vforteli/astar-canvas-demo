@@ -11,7 +11,7 @@
     "start": "webpack-dev-server"
   },
   "dependencies": {
-    "wasm-game-of-life": "file:../pkg"
+    "astar-wasm": "file:../pkg"
   },
   "devDependencies": {
     "hello-wasm-pack": "^0.1.0",
