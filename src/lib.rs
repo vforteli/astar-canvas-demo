@@ -1,6 +1,6 @@
 mod utils;
 
-use std::convert::TryInto;
+use std::{convert::TryInto, vec};
 
 use wasm_bindgen::prelude::*;
 
@@ -18,6 +18,11 @@ extern "C" {
 #[wasm_bindgen]
 pub fn greet() {
     alert("Hello, astar-rust-wasm!");
+}
+
+#[wasm_bindgen]
+pub fn click(x: u32, y: u32) {
+    alert(format!("clicked {}:{}!", x, y).as_str());
 }
 
 #[wasm_bindgen]
@@ -46,9 +51,6 @@ impl Board {
         let height = image.get_height();
         let width = image.get_width();
 
-        // let width: u32 = 100;
-        // let height: u32 = 100;
-
         let cells = (0..width * height)
             .map(|i| if i % 7 == 0 { Cell::Alive } else { Cell::Dead })
             .collect();
@@ -64,10 +66,6 @@ impl Board {
                 image_data[(i + 1) as usize] = pixel.g;
                 image_data[(i + 2) as usize] = pixel.b;
                 image_data[(i + 3) as usize] = 255;
-                // image_data[i as usize] = (x % 255).try_into().unwrap();
-                // image_data[(i + 1) as usize] = (y % 255).try_into().unwrap();
-                // image_data[(i + 2) as usize] = 0;
-                // image_data[(i + 3) as usize] = 255;
             }
         }
 
@@ -93,5 +91,13 @@ impl Board {
 
     pub fn image_data(&self) -> *const u8 {
         self.image_data.as_ptr()
+    }
+
+    pub fn click_cell(&mut self, x: u32, y: u32) {
+        // alert(format!("clicked {}:{}!", x, y).as_str());
+
+        for i in 0..10000 {
+            self.image_data[i] = 0;
+        }
     }
 }
