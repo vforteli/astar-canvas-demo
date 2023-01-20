@@ -2,6 +2,7 @@ mod utils;
 
 use std::{convert::TryInto, vec};
 
+use bmp::Image;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -25,14 +26,6 @@ pub fn click(x: u32, y: u32) {
     alert(format!("clicked {}:{}!", x, y).as_str());
 }
 
-#[wasm_bindgen]
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Cell {
-    Dead = 0,
-    Alive = 1,
-}
-
 struct Point {
     x: u32,
     y: u32,
@@ -42,8 +35,8 @@ struct Point {
 pub struct Board {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
-    image_data: Vec<u8>,
+    image: Image,
+    frame_data: Vec<u8>,
     start_pixel: Option<Point>,
 }
 
@@ -51,35 +44,15 @@ pub struct Board {
 impl Board {
     pub fn new() -> Self {
         let mut bytes: &[u8] = include_bytes!("../assets/castle.bmp");
-
         let image = bmp::from_reader(&mut bytes).unwrap();
-
         let height = image.get_height();
         let width = image.get_width();
-
-        let cells = (0..width * height)
-            .map(|i| if i % 7 == 0 { Cell::Alive } else { Cell::Dead })
-            .collect();
-
-        let mut image_data: Vec<u8> = vec![0; (width * height * 4).try_into().unwrap()];
-
-        for y in 0..height {
-            for x in 0..width {
-                let i = (y * width + x) * 4;
-                let pixel = image.get_pixel(x, y);
-
-                image_data[i as usize] = pixel.r;
-                image_data[(i + 1) as usize] = pixel.g;
-                image_data[(i + 2) as usize] = pixel.b;
-                image_data[(i + 3) as usize] = 255;
-            }
-        }
 
         Board {
             width,
             height,
-            cells,
-            image_data,
+            image,
+            frame_data: vec![0; (width * height * 4).try_into().unwrap()],
             start_pixel: None,
         }
     }
@@ -92,20 +65,36 @@ impl Board {
         self.height
     }
 
-    pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+    pub fn render(&mut self) -> *const u8 {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let i = (y * self.width + x) * 4;
+                let pixel = self.image.get_pixel(x, y);
+
+                self.frame_data[i as usize] = pixel.r;
+                self.frame_data[(i + 1) as usize] = pixel.g;
+                self.frame_data[(i + 2) as usize] = pixel.b;
+                self.frame_data[(i + 3) as usize] = 255;
+            }
+        }
+
+        if let Some(pixel) = &self.start_pixel {
+            let pixel_index: usize = ((pixel.y * self.width * 4) + (pixel.x * 4))
+                .try_into()
+                .unwrap();
+            self.frame_data[pixel_index] = 255;
+            self.frame_data[pixel_index + 1] = 0;
+            self.frame_data[pixel_index + 2] = 0;
+        }
+
+        self.frame_data.as_ptr()
     }
 
-    pub fn image_data(&self) -> *const u8 {
-        self.image_data.as_ptr()
+    pub fn frame_data(&self) -> *const u8 {
+        self.frame_data.as_ptr()
     }
 
     pub fn click_cell(&mut self, x: u32, y: u32) {
         self.start_pixel = Some(Point { x, y });
-        // // alert(format!("clicked {}:{}!", x, y).as_str());
-        let pixel_index: usize = ((y * self.width * 4) + (x * 4)).try_into().unwrap();
-        self.image_data[pixel_index] = 255;
-        self.image_data[pixel_index + 1] = 0;
-        self.image_data[pixel_index + 2] = 0;
     }
 }
