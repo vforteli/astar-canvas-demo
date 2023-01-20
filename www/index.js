@@ -6,7 +6,7 @@ import { memory, click } from "astar-wasm/astar_rust_wasm_bg.wasm";
 // wasm.greet();
 const DEAD_COLOR = "#FFFFFF";
 const ALIVE_COLOR = "#000000";
-const CELL_SIZE = 4
+const CELL_SIZE = 5
 
 const board = Board.new()
 const width = board.width()
@@ -18,25 +18,58 @@ const context = canvas.getContext('2d');
 
 
 canvas.addEventListener('click', function (e) {
-    board.click_cell(e.layerX, e.layerY)
+    console.debug(Math.floor(e.layerX / CELL_SIZE))
+    console.debug(Math.floor(e.layerY / CELL_SIZE))
+    board.click_cell(Math.floor(e.layerX / CELL_SIZE), Math.floor(e.layerY / CELL_SIZE))
     renderImage(context)
 }, false);
 
 
-canvas.height = height
-canvas.width = width
+canvas.height = height * CELL_SIZE
+canvas.width = width * CELL_SIZE
 
-const getIndex = (row, column) => {
-    return row * width + column
+const componentToHex = (c) => {
+    var hex = c.toString(16)
+    return hex.length == 1 ? "0" + hex : hex
 }
+
+const colorHex = (r, g, b) => {
+    return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`
+}
+
 
 const renderImage = (context) => {
     if (context) {
         const buffer = new Uint8Array(memory.buffer, board.image_data(), width * height * 4)
         const imageDataRaw = new Uint8ClampedArray(buffer)
+        // console.debug(imageDataRaw)
 
-        const imageData = new ImageData(imageDataRaw, width, height)
-        context.putImageData(imageData, 0, 0)
+        for (let row = 0; row < height; row++) {
+            for (let col = 0; col < width; col++) {
+                const pixelIndex = row * (width * 4) + (col * 4)
+                // console.debug(pixelIndex)
+
+                // if (pixelIndex > 2000) return;
+
+                const r = imageDataRaw[pixelIndex]
+                const g = imageDataRaw[pixelIndex + 1]
+                const b = imageDataRaw[pixelIndex + 2]
+                const a = imageDataRaw[pixelIndex + 3]
+
+
+                context.fillStyle = colorHex(r, g, b)
+
+                context.fillRect(
+                    col * CELL_SIZE,
+                    row * CELL_SIZE,
+                    CELL_SIZE,
+                    CELL_SIZE
+                );
+            }
+        }
+
+        // const imageData = new ImageData(imageDataRaw, width, height)
+        // context.putImageData(imageData, 0, 0)
     }
 }
 

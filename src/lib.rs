@@ -33,12 +33,18 @@ pub enum Cell {
     Alive = 1,
 }
 
+struct Point {
+    x: u32,
+    y: u32,
+}
+
 #[wasm_bindgen]
 pub struct Board {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
     image_data: Vec<u8>,
+    start_pixel: Option<Point>,
 }
 
 #[wasm_bindgen]
@@ -74,6 +80,7 @@ impl Board {
             height,
             cells,
             image_data,
+            start_pixel: None,
         }
     }
 
@@ -94,10 +101,11 @@ impl Board {
     }
 
     pub fn click_cell(&mut self, x: u32, y: u32) {
-        // alert(format!("clicked {}:{}!", x, y).as_str());
-
-        for i in 0..10000 {
-            self.image_data[i] = 0;
-        }
+        self.start_pixel = Some(Point { x, y });
+        // // alert(format!("clicked {}:{}!", x, y).as_str());
+        let pixel_index: usize = ((y * self.width * 4) + (x * 4)).try_into().unwrap();
+        self.image_data[pixel_index] = 255;
+        self.image_data[pixel_index + 1] = 0;
+        self.image_data[pixel_index + 2] = 0;
     }
 }
