@@ -1,3 +1,5 @@
+mod astar;
+mod hybridheap;
 mod utils;
 
 use std::{convert::TryInto, vec};
