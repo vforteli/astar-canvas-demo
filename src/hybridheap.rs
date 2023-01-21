@@ -13,7 +13,7 @@ pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: Ord> {
 impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'_, K, V> {
     pub fn new() -> Self {
         HybridHeap {
-            items: Vec::with_capacity(1000), // todo fix...
+            items: Vec::with_capacity(1000),
             hashmap: HashMap::new(),
         }
     }
@@ -31,7 +31,8 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'_, K, V> {
         todo!()
     }
 
-    pub fn push(&mut self, key: &K, value: V) {
+    // pub fn push(&'a mut self, key: &K, value: V) {
+    pub fn push(&'a mut self, key: &K) {
         /*
         if (hashmap.containsKey(object))
         {
@@ -45,9 +46,10 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'_, K, V> {
         hashmap.put(object, index);
         tail++; */
 
-        self.items.push(HeapItem { key, value });
-        let new_index = self.bubble_up(self.items.len() - 1);
+        // self.items.push(HeapItem { key, value });
+        // let new_index = self.bubble_up(self.items.len() - 1);
 
+        let new_index = 5;
         self.hashmap.insert(key, new_index);
     }
 
@@ -55,8 +57,11 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'_, K, V> {
         todo!()
     }
 
-    pub fn peek(&self) -> K {
-        todo!()
+    pub fn peek(&self) -> Option<&K> {
+        match self.items.get(0) {
+            Some(item) => Some(item.key),
+            None => None,
+        }
     }
 
     pub fn is_empty(&self) -> bool {
