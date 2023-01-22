@@ -19,9 +19,61 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
         }
     }
 
-    /// Change value of a key, this will be bubbled up or down
-    pub fn change_value(self, key: &K, new_value: V) {
-        todo!()
+    /// Change value of a key already in heap, this will be bubbled up or down
+    pub fn change_value(&mut self, key: &K, new_value: V) {
+        let index = self.hashmap.get(key).unwrap();
+
+        let item = self.items.get(*index).unwrap();
+
+        if item.value > new_value {
+            self.items[*index] = HeapItem {
+                key: item.key,
+                value: new_value,
+            };
+            self.bubble_up(*index);
+        } else if item.value < new_value {
+            self.items[*index] = HeapItem {
+                key: item.key,
+                value: new_value,
+            };
+            self.bubble_down(*index);
+        }
+
+        todo!("update hashmap...")
+
+        /*
+            public boolean decreaseKey(V value, T key)
+        {
+            Integer index = hashmap.get(key);
+            if (index != null)
+            {
+                Item<V, T> item = heap[index];
+                if (value.compareTo(item.key) < 0)
+                {
+                    item.key = value;
+                    bubbleUp(index);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean increaseKey(V value, T key)
+        {
+            Integer index = hashmap.get(key);
+            if (index != null)
+            {
+                Item<V, T> item = heap[index];
+                if (value.compareTo(item.key) > 0)
+                {
+                    item.key = value;
+                    bubbleDown(index);
+                    return true;
+                }
+            }
+            return false;
+        }
+         */
     }
 
     pub fn contains_key(&self, key: &K) -> bool {
@@ -32,12 +84,14 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
         todo!()
     }
 
+    /// Push new item with value
     pub fn push(&mut self, key: &'a K, value: V) {
         self.items.push(HeapItem { key, value });
         let new_index = self.bubble_up(self.items.len() - 1);
         self.hashmap.insert(key, new_index);
     }
 
+    /// Pop item
     pub fn pop(&mut self) -> Option<&K> {
         match self.items.get(0) {
             Some(item) => {
@@ -57,6 +111,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
         }
     }
 
+    /// Peek item without removing it
     pub fn peek(&self) -> Option<&K> {
         match self.items.get(0) {
             Some(item) => Some(item.key),
@@ -258,5 +313,36 @@ mod tests {
         assert!(heap.is_empty());
         assert!(heap.peek().is_none());
         assert!(heap.pop().is_none());
+    }
+
+    #[test]
+    fn test_change_value_up() {
+        let mut heap = HybridHeap::new();
+
+        heap.push(&"first", 10);
+        heap.push(&"second", 5);
+        heap.push(&"third", 15);
+
+        assert_eq!(Some(&"second"), heap.peek());
+
+        heap.change_value(&"third", 2);
+        assert_eq!(Some(&"third"), heap.peek());
+
+        heap.change_value(&"first", 1);
+        assert_eq!(Some(&"first"), heap.peek());
+    }
+
+    #[test]
+    fn test_change_value_down() {
+        let mut heap = HybridHeap::new();
+
+        heap.push(&"first", 10);
+        heap.push(&"second", 5);
+        heap.push(&"third", 15);
+
+        assert_eq!(Some(&"second"), heap.peek());
+
+        heap.change_value(&"second", 100);
+        assert_eq!(Some(&"first"), heap.peek());
     }
 }
