@@ -1,16 +1,17 @@
 use std::{collections::HashMap, hash::Hash};
 
+#[derive(Clone, Copy)]
 struct HeapItem<'a, K: Eq + Hash + PartialEq, V: Ord + PartialOrd> {
     key: &'a K,
     value: V,
 }
 
-pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: Ord> {
+pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> {
     items: Vec<HeapItem<'a, K, V>>,
     hashmap: HashMap<&'a K, usize>,
 }
 
-impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'a, K, V> {
+impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
     pub fn new() -> Self {
         HybridHeap {
             items: Vec::with_capacity(1000),
@@ -68,29 +69,52 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord> HybridHeap<'a, K, V> {
     }
 
     fn bubble_up(&mut self, index: usize) -> usize {
-        let item = self.items.get(index).unwrap();
+        // todo clean up this mess..
+        if index > 0 {
+            let mut index = index;
+            let value = self.items.get(index).unwrap().value;
+            let mut parent_index = (index - 1) / 2;
 
-        let parent_index = (index - 1) / 2;
+            while index > 0 && self.items.get(parent_index).unwrap().value >= value {
+                self.items.swap(index, parent_index);
+                index = parent_index;
+                if index < 1 {
+                    break;
+                }
 
-        while index > 0 && &self.items.get(parent_index).unwrap().value >= &item.value {
-            let parent = &self.items[parent_index];
-            self.items[index] = parent;
-            /* hashmap.put(heap[parentindex].value, index);
-            heap[index] = heap[parentindex];
-            index = parentindex;
-            parentindex = (index - 1) / 2; */
+                parent_index = (index - 1) / 2;
+            }
         }
-        /*
 
-        heap[index] = last;
-        hashmap.put(last.value, index);
-        return index;
-         */
-        1
+        index
     }
 
     fn bubble_down(&mut self, index: usize) -> usize {
-        1
+        let mut index = index;
+        let foo = self.items.get(index).unwrap().value;
+
+        while index < self.items.len() / 2 {
+            let left_child_index = 2 * index + 1;
+            let right_child_index = left_child_index + 1;
+
+            let smaller_node_index = if right_child_index < self.items.len()
+                && (self.items.get(right_child_index).unwrap().value
+                    < self.items.get(left_child_index).unwrap().value)
+            {
+                right_child_index
+            } else {
+                left_child_index
+            };
+
+            if foo <= self.items.get(smaller_node_index).unwrap().value {
+                break;
+            }
+
+            self.items.swap(index, smaller_node_index);
+            index = smaller_node_index;
+        }
+
+        index
     }
 }
 
@@ -198,5 +222,41 @@ mod tests {
         let actual = heap.pop();
 
         assert_eq!(Some(&some_other_item), actual);
+    }
+
+    #[test]
+    fn test_delete_min() {
+        let mut heap = HybridHeap::new();
+        assert!(heap.is_empty());
+        assert!(heap.peek().is_none());
+        assert!(heap.pop().is_none());
+
+        heap.push(&"first", 10);
+        heap.push(&"second", 5);
+        heap.push(&"third", 15);
+
+        assert!(!heap.is_empty());
+
+        let peek_actual = heap.peek();
+        assert_eq!(Some(&"second"), peek_actual);
+
+        let actual = heap.pop();
+        assert_eq!(Some(&"second"), actual);
+
+        let peek_actual2 = heap.peek();
+        assert_eq!(Some(&"first"), peek_actual2);
+
+        let actual2 = heap.pop();
+        assert_eq!(Some(&"first"), actual2);
+
+        let peek_actual3 = heap.peek();
+        assert_eq!(Some(&"third"), peek_actual3);
+
+        let actual3 = heap.pop();
+        assert_eq!(Some(&"third"), actual3);
+
+        assert!(heap.is_empty());
+        assert!(heap.peek().is_none());
+        assert!(heap.pop().is_none());
     }
 }
