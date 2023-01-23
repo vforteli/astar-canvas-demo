@@ -40,6 +40,7 @@ pub struct Board {
     image: Image,
     frame_data: Vec<u8>,
     start_pixel: Option<Point>,
+    cell_weights: Vec<u8>,
 }
 
 #[wasm_bindgen]
@@ -56,6 +57,7 @@ impl Board {
             image,
             frame_data: vec![0; (width * height * 4).try_into().unwrap()],
             start_pixel: None,
+            cell_weights: vec![0; (width * height).try_into().unwrap()],
         }
     }
 
