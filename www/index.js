@@ -1,5 +1,6 @@
 import { Board } from "astar-wasm";
 import { memory } from "astar-wasm/astar_rust_wasm_bg.wasm";
+import { colorHex } from "./utils";
 
 const CELL_SIZE = 5
 
@@ -8,27 +9,28 @@ const width = board.width()
 const height = board.height()
 
 const canvas = document.getElementById("board-canvas")
+canvas.height = height * CELL_SIZE
+canvas.width = width * CELL_SIZE
+
+const pointInfoSpan = document.getElementById("point-info")
 
 const context = canvas.getContext('2d');
 
 
-canvas.addEventListener('click', function (e) {
+canvas.addEventListener('click', e => {
     board.click_cell(Math.floor(e.layerX / CELL_SIZE), Math.floor(e.layerY / CELL_SIZE))
     renderImage(context)
 }, false);
 
+canvas.addEventListener('mousemove', e => {
+    const x = Math.floor(e.layerX / CELL_SIZE)
+    const y = Math.floor(e.layerY / CELL_SIZE)
+    const cellInfo = board.get_cell_info(x, y)
+    pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo}`
+}, false);
 
-canvas.height = height * CELL_SIZE
-canvas.width = width * CELL_SIZE
 
-const componentToHex = (c) => {
-    var hex = c.toString(16)
-    return hex.length == 1 ? "0" + hex : hex
-}
 
-const colorHex = (r, g, b) => {
-    return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`
-}
 
 
 const renderImage = (context) => {

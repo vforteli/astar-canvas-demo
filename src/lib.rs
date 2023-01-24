@@ -4,9 +4,14 @@ mod utils;
 
 use std::{convert::TryInto, vec};
 
+use astar::Point;
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
+use crate::astar::{coordinates_to_index, normalize, rgb_to_hsv};
+
+const TERRAIN_MIN_WEIGHT: u32 = 1;
+const TERRAIN_MAX_WEIGHT: u32 = 10;
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
@@ -28,11 +33,6 @@ pub fn click(x: u32, y: u32) {
     alert(format!("clicked {}:{}!", x, y).as_str());
 }
 
-struct Point {
-    x: u32,
-    y: u32,
-}
-
 #[wasm_bindgen]
 pub struct Board {
     width: u32,
@@ -40,7 +40,7 @@ pub struct Board {
     image: Image,
     frame_data: Vec<u8>,
     start_pixel: Option<Point>,
-    cell_weights: Vec<u8>,
+    cell_weights: Vec<f32>,
 }
 
 #[wasm_bindgen]
@@ -57,7 +57,7 @@ impl Board {
             image,
             frame_data: vec![0; (width * height * 4).try_into().unwrap()],
             start_pixel: None,
-            cell_weights: vec![0; (width * height).try_into().unwrap()],
+            cell_weights: vec![0.0; (width * height).try_into().unwrap()],
         }
     }
 
@@ -79,6 +79,19 @@ impl Board {
                 self.frame_data[(i + 1) as usize] = pixel.g;
                 self.frame_data[(i + 2) as usize] = pixel.b;
                 self.frame_data[(i + 3) as usize] = 255;
+
+                let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
+                let inverted_brighntess = (hsv.brightness - 1.0).abs();
+                let normalized_brighntess = normalize(
+                    0.0,
+                    1.0,
+                    TERRAIN_MIN_WEIGHT as f32,
+                    TERRAIN_MAX_WEIGHT as f32,
+                    inverted_brighntess,
+                );
+
+                self.cell_weights[coordinates_to_index(self.width, x, y) as usize] =
+                    normalized_brighntess;
             }
         }
 
@@ -100,5 +113,11 @@ impl Board {
 
     pub fn click_cell(&mut self, x: u32, y: u32) {
         self.start_pixel = Some(Point { x, y });
+    }
+
+    /// Get cell info... currently just the weight
+    pub fn get_cell_info(&mut self, x: u32, y: u32) -> Option<f32> {
+        let index = coordinates_to_index(self.width, x, y);
+        self.cell_weights.get(index as usize).copied()
     }
 }
