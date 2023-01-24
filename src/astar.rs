@@ -1,5 +1,12 @@
-use std::{convert::TryInto, ops::Mul};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryInto,
+    ops::Mul,
+};
 
+use crate::hybridheap::HybridHeap;
+
+#[derive(Clone)]
 pub struct Point {
     pub x: u32,
     pub y: u32,
@@ -45,7 +52,7 @@ pub fn index_to_coordinates(width: u32, index: u32) -> Point {
 
 /// Calculates the weight from one cell to a neighbour. The weight is from the middle of the first cell to the middle of the second cell
 /// Moving diagonally increases weight.
-pub fn calculate_weight(from: Point, to: Point, weights: Vec<f32>, width: u32) -> f32 {
+pub fn calculate_weight(from: Point, to: Point, weights: &Vec<f32>, width: u32) -> f32 {
     let mut to_weight = weights[coordinates_to_index(width, to.x, to.y) as usize];
 
     if to_weight < 0.0 {
@@ -65,8 +72,8 @@ pub fn calculate_weight(from: Point, to: Point, weights: Vec<f32>, width: u32) -
 /// Heuristic function... since we have an euclidean space, this will just be the euclidean distance with the minimum terrain weight
 /// For A* it is important to never overestimate the distance and therefore minimum weight is assumed
 pub fn calculate_heuristical_distance(
-    from: Point,
-    to: Point,
+    from: &Point,
+    to: &Point,
     multiplier: u32,
     min_weight: f32,
 ) -> f32 {
@@ -131,6 +138,151 @@ pub fn get_neighbours(point: Point, width: u32, height: u32) -> Vec<u32> {
 
     neighbours
 }
+
+/// Find path \o/
+pub fn find_path(
+    from: Point,
+    to: Point,
+    width: u32,
+    height: u32,
+    multiplier: u32,
+    min_weight: f32,
+    weights: Vec<f32>,
+) {
+    let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
+    let mut closedset: HashSet<u32> = HashSet::new();
+    let mut g_score: HashMap<u32, f32> = HashMap::new();
+    let mut came_from: HashMap<u32, u32> = HashMap::new();
+
+    let from_index = coordinates_to_index(width, from.x, from.y);
+    let to_index = coordinates_to_index(width, to.x, to.y);
+
+    g_score.insert(from_index, 0.0);
+    openset.push(
+        from_index,
+        calculate_heuristical_distance(&from, &to, multiplier, min_weight),
+    );
+
+    while let Some(current) = openset.pop() {
+        closedset.insert(current);
+
+        if current == to_index {
+            todo!("reconstruct path!")
+        }
+
+        let current_score = g_score.get(&current).unwrap().clone();
+
+        for neighbour in get_neighbours(index_to_coordinates(width, current), width, height) {
+            let weight = calculate_weight(
+                index_to_coordinates(width, current),
+                index_to_coordinates(width, neighbour),
+                &weights,
+                width,
+            );
+
+            if weight < 1.0 {
+                continue;
+            }
+
+            let tentative_g_score = current_score + weight;
+            let g_score_neighbour = g_score.get(&neighbour);
+
+            // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
+            //if (closedset.containsKey(neighbour) && g_scoreneighbour <= tentative_gscore)
+            if let Some(score) = g_score_neighbour {
+                // doing this on the same line as above is unstable :/
+                if *score <= tentative_g_score {
+                    continue;
+                }
+            }
+
+            // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
+            if g_score_neighbour.is_none() || tentative_g_score < *g_score_neighbour.unwrap() {
+                g_score.insert(neighbour, tentative_g_score);
+                came_from.insert(neighbour, current);
+            }
+
+            let tentative_f_score = tentative_g_score
+                + calculate_heuristical_distance(
+                    &index_to_coordinates(width, neighbour),
+                    &to,
+                    multiplier,
+                    min_weight,
+                );
+
+            // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
+            if !openset.contains_key(&neighbour) && !closedset.contains(&neighbour) {
+                openset.push(neighbour, tentative_f_score);
+            } else {
+                // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
+                openset.change_value(&neighbour, tentative_f_score);
+            }
+        }
+    }
+}
+
+/*
+/**
+     * Find a path from start to end coordinates
+     * @param start
+     * @param end
+     * @param heuristicMultiplier
+     * @return PathInfo containing the path and path length if available, and the nodes visited
+     */
+    public PathInfo findPath(Coordinates start, Coordinates end, int heuristicMultiplier)
+    {
+        int initialsize = 1000;
+        HybridHeap<Float, Coordinates> openset = new HybridHeap<>();
+        AbstractMap<Coordinates, Integer> closedset = new MapHache<>(initialsize);
+        AbstractMap<Coordinates, Coordinates> camefrom = new MapHache<>(initialsize);
+        AbstractMap<Coordinates, Float> g_score = new MapHache<>(initialsize);
+
+        // Distance from start is obviously 0... good place to start
+        g_score.put(start, 0f);
+        openset.insert(getHDistance(start, end, heuristicMultiplier, terrainMinWeight), start);
+
+        while (!openset.isEmpty())
+        {
+            Coordinates current = openset.deleteMin();  // Get an open node with the lowest f_score, ie the one which looks best at the time
+            closedset.put(current, 0);
+
+            if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
+                return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
+
+            for (Coordinates neighbour : getNeighbours(current))
+            {
+                float weight = calculateWeight(current, neighbour);
+
+                if (weight == -1)    // Wall...
+                    continue;
+
+                float tentative_gscore = g_score.get(current) + weight;
+                Float g_scoreneighbour = g_score.get(neighbour);
+
+                // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
+                if (closedset.containsKey(neighbour) && g_scoreneighbour <= tentative_gscore)
+                    continue;
+
+                // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
+                if (g_scoreneighbour == null || tentative_gscore < g_scoreneighbour)
+                {
+                    g_score.put(neighbour, tentative_gscore);
+                    camefrom.put(neighbour, current);
+                }
+
+                // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
+                float tentative_fscore = tentative_gscore + getHDistance(neighbour, end, heuristicMultiplier, terrainMinWeight);
+                if (!openset.containsKey(neighbour) && !closedset.containsKey(neighbour))
+                    openset.insert(tentative_fscore, neighbour);
+
+                // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
+                openset.decreaseKey(tentative_fscore, neighbour);
+            }
+        }
+
+        // If we get here, no path was found... return stuff anyway to show pretty graphs
+        return new PathInfo(null, closedset, null);
+    } */
 
 #[cfg(test)]
 mod tests {
