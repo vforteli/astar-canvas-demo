@@ -159,7 +159,7 @@ pub fn find_path(
     let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
 
     // closed set contains nodes that have been visited, but may still be visited again if a better score can be achieved
-    let mut closedset: HashSet<u32> = HashSet::new();
+    // let mut closedset: HashSet<u32> = HashSet::new();
 
     // g scores contains the currently best scores for visited nodes and from where we ended up here
     let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::new();
@@ -180,11 +180,12 @@ pub fn find_path(
     );
 
     while let Some(current) = openset.pop() {
-        closedset.insert(current);
+        // closedset.insert(current);
 
         if current == to_index {
             // if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
             // return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
+            println!("sup {:?}", g_score.get(&to_index).unwrap().score);
             return Some(g_score.get(&to_index).unwrap().score);
         }
 
@@ -236,7 +237,7 @@ pub fn find_path(
                 );
 
             // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
-            if !openset.contains_key(&neighbour) && !closedset.contains(&neighbour) {
+            if !openset.contains_key(&neighbour) {
                 openset.push(neighbour, tentative_f_score);
             } else {
                 // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
