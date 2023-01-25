@@ -18,6 +18,12 @@ pub struct HSV {
     pub brightness: f32,
 }
 
+#[derive(Clone, Copy)]
+struct VisitedPoint<S, K> {
+    pub score: S,
+    pub came_from_key: K,
+}
+
 pub fn rgb_to_hsv(r: u8, g: u8, b: u8) -> HSV {
     let r = r as f32 / 255.0;
     let g = g as f32 / 255.0;
@@ -149,15 +155,25 @@ pub fn find_path(
     min_weight: f32,
     weights: &Vec<f32>,
 ) -> Option<f32> {
+    // openset contains seen nodes which havent yet been visited
     let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
+
+    // closed set contains nodes that have been visited, but may still be visited again if a better score can be achieved
     let mut closedset: HashSet<u32> = HashSet::new();
-    let mut g_score: HashMap<u32, f32> = HashMap::new();
-    let mut came_from: HashMap<u32, u32> = HashMap::new();
+
+    // g scores contains the currently best scores for visited nodes and from where we ended up here
+    let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::new();
 
     let from_index = coordinates_to_index(width, from.x, from.y);
     let to_index = coordinates_to_index(width, to.x, to.y);
 
-    g_score.insert(from_index, 0.0);
+    g_score.insert(
+        from_index,
+        VisitedPoint {
+            score: 0.0,
+            came_from_key: from_index,
+        },
+    );
     openset.push(
         from_index,
         calculate_heuristical_distance(&from, &to, multiplier, min_weight),
@@ -169,10 +185,10 @@ pub fn find_path(
         if current == to_index {
             // if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
             // return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
-            return g_score.get(&to_index).cloned();
+            return Some(g_score.get(&to_index).unwrap().score);
         }
 
-        let current_score = g_score.get(&current).unwrap().clone();
+        let current_score = g_score[&current];
 
         for neighbour in get_neighbours(index_to_coordinates(width, current), width, height) {
             let weight = calculate_weight(
@@ -182,26 +198,33 @@ pub fn find_path(
                 width,
             );
 
+            // wall...
             if weight < 1.0 {
                 continue;
             }
 
-            let tentative_g_score = current_score + weight;
+            let tentative_g_score = current_score.score + weight;
             let g_score_neighbour = g_score.get(&neighbour);
 
             // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-            //if (closedset.containsKey(neighbour) && g_scoreneighbour <= tentative_gscore)
             if let Some(score) = g_score_neighbour {
                 // doing this on the same line as above is unstable :/
-                if *score <= tentative_g_score {
+                if (*score).score <= tentative_g_score {
                     continue;
                 }
             }
 
             // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
-            if g_score_neighbour.is_none() || tentative_g_score < *g_score_neighbour.unwrap() {
-                g_score.insert(neighbour, tentative_g_score);
-                came_from.insert(neighbour, current);
+            if g_score_neighbour.is_none()
+                || tentative_g_score < (*g_score_neighbour.unwrap()).score
+            {
+                g_score.insert(
+                    neighbour,
+                    VisitedPoint {
+                        score: tentative_g_score,
+                        came_from_key: current,
+                    },
+                );
             }
 
             let tentative_f_score = tentative_g_score
