@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn test_find_path_straigth() {
+    fn test_find_path_straight() {
         let weights: Vec<f32> = vec![1.0; 100];
         let height = 10;
         let width = 10;
