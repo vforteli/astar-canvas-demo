@@ -159,11 +159,11 @@ pub fn find_path(
 
     g_score.insert(from_index, 0.0);
     openset.push(
-        from_index,
+        &from_index,
         calculate_heuristical_distance(&from, &to, multiplier, min_weight),
     );
 
-    while let Some(current) = openset.pop() {
+    while let Some(current) = openset.pop().cloned() {
         closedset.insert(current);
 
         if current == to_index {
