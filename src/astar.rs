@@ -390,4 +390,75 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn test_find_path_weights() {
+        let mut weights: Vec<f32> = vec![1.0; 10];
+        weights.extend(vec![2.0; 10]);
+        weights.extend(vec![1.0; 10]);
+        weights.extend(vec![2.0; 10]);
+        weights.extend(vec![1.0; 10]);
+        weights.extend(vec![2.0; 10]);
+        weights.extend(vec![1.0; 10]);
+        weights.extend(vec![2.0; 10]);
+        weights.extend(vec![1.0; 10]);
+        weights.extend(vec![2.0; 10]);
+
+        let height = 10;
+        let width = 10;
+        let multiplier = 1;
+        let min_weight = 1.0;
+
+        assert_eq!(
+            Some(9.0),
+            find_path(
+                Point { x: 0, y: 0 },
+                Point { x: 9, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(13.5),
+            find_path(
+                Point { x: 0, y: 0 },
+                Point { x: 0, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(13.5),
+            find_path(
+                Point { x: 9, y: 0 },
+                Point { x: 9, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(11.242641),
+            find_path(
+                Point { x: 9, y: 9 },
+                Point { x: 0, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+    }
 }
