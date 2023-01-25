@@ -1,17 +1,17 @@
 use std::{collections::HashMap, hash::Hash};
 
 #[derive(Clone, Copy, Debug)]
-struct HeapItem<'a, K: Eq + Hash + PartialEq, V: PartialOrd> {
-    key: &'a K,
+struct HeapItem<K: Eq + Hash + PartialEq + Copy, V: PartialOrd> {
+    key: K,
     value: V,
 }
 
-pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> {
-    items: Vec<HeapItem<'a, K, V>>,
-    hashmap: HashMap<&'a K, usize>,
+pub struct HybridHeap<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> {
+    items: Vec<HeapItem<K, V>>,
+    hashmap: HashMap<K, usize>,
 }
 
-impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
+impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
     pub fn new() -> Self {
         HybridHeap {
             items: Vec::with_capacity(1000),
@@ -20,8 +20,8 @@ impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
     }
 
     /// Change value of a key already in heap, this will be bubbled up or down
-    pub fn change_value(&mut self, key: &'a K, new_value: V) {
-        let index = self.hashmap.get(key).unwrap();
+    pub fn change_value(&mut self, key: K, new_value: V) {
+        let index = self.hashmap.get(&key).unwrap();
 
         let item = self.items.get(*index).unwrap();
 
@@ -51,17 +51,17 @@ impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
     }
 
     /// Push new item with value
-    pub fn push(&mut self, key: &'a K, value: V) {
+    pub fn push(&mut self, key: K, value: V) {
         self.items.push(HeapItem { key, value });
         self.bubble_up(self.items.len() - 1);
     }
 
     /// Pop item
-    pub fn pop(&mut self) -> Option<&K> {
+    pub fn pop(&mut self) -> Option<K> {
         match self.items.get(0) {
             Some(item) => {
                 let key = item.key;
-                self.hashmap.remove(item.key);
+                self.hashmap.remove(&item.key);
 
                 if let Some(last) = self.items.pop() {
                     if self.items.len() > 0 {
@@ -79,7 +79,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
     /// Peek item without removing it
     pub fn peek(&self) -> Option<&K> {
         match self.items.get(0) {
-            Some(item) => Some(item.key),
+            Some(item) => Some(&item.key),
             None => None,
         }
     }
@@ -150,7 +150,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
 #[cfg(test)]
 mod tests {
 
-    #[derive(Eq, PartialEq, Hash, Debug)]
+    #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
     struct TestItem {
         some_value: u32,
     }
@@ -209,7 +209,7 @@ mod tests {
 
         let some_other_item = TestItem { some_value: 1 };
 
-        heap.push(&some_item, 2);
+        heap.push(some_item, 2);
 
         assert_eq!(true, heap.contains_key(&some_item));
         assert_eq!(false, heap.contains_key(&some_other_item));
@@ -260,9 +260,9 @@ mod tests {
         assert!(heap.peek().is_none());
         assert!(heap.pop().is_none());
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert!(!heap.is_empty());
 
@@ -270,19 +270,19 @@ mod tests {
         assert_eq!(Some(&"second"), peek_actual);
 
         let actual = heap.pop();
-        assert_eq!(Some(&"second"), actual);
+        assert_eq!(Some("second"), actual);
 
         let peek_actual2 = heap.peek();
         assert_eq!(Some(&"first"), peek_actual2);
 
         let actual2 = heap.pop();
-        assert_eq!(Some(&"first"), actual2);
+        assert_eq!(Some("first"), actual2);
 
         let peek_actual3 = heap.peek();
         assert_eq!(Some(&"third"), peek_actual3);
 
         let actual3 = heap.pop();
-        assert_eq!(Some(&"third"), actual3);
+        assert_eq!(Some("third"), actual3);
 
         assert!(heap.is_empty());
         assert!(heap.peek().is_none());
@@ -293,9 +293,9 @@ mod tests {
     fn test_change_value_up() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert_eq!(Some(&"second"), heap.peek());
 
@@ -310,9 +310,9 @@ mod tests {
     fn test_change_value_down() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert_eq!(Some(&"second"), heap.peek());
         println!("{:?}", heap.items);
@@ -328,12 +328,12 @@ mod tests {
     fn test_insert_lower_value() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 2);
-        heap.push(&"second", 2);
+        heap.push("first", 2);
+        heap.push("second", 2);
 
         assert_eq!(Some(&"second"), heap.peek());
-        assert_eq!(&"second", heap.items.get(0).unwrap().key);
-        assert_eq!(&"first", heap.items.get(1).unwrap().key);
+        assert_eq!("second", heap.items.get(0).unwrap().key);
+        assert_eq!("first", heap.items.get(1).unwrap().key);
 
         println!("{:?}", heap.items);
         println!("{:?}", heap.hashmap);

@@ -77,8 +77,8 @@ pub fn calculate_heuristical_distance(
     multiplier: u32,
     min_weight: f32,
 ) -> f32 {
-    let x = (from.x - to.x) as f32 * min_weight;
-    let y = (from.y - to.y) as f32 * min_weight;
+    let x = (from.x as i32 - to.x as i32) as f32 * min_weight;
+    let y = (from.y as i32 - to.y as i32) as f32 * min_weight;
 
     ((x * x + y * y) * multiplier as f32).sqrt()
 }
@@ -147,8 +147,8 @@ pub fn find_path(
     height: u32,
     multiplier: u32,
     min_weight: f32,
-    weights: Vec<f32>,
-) {
+    weights: &Vec<f32>,
+) -> Option<f32> {
     let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
     let mut closedset: HashSet<u32> = HashSet::new();
     let mut g_score: HashMap<u32, f32> = HashMap::new();
@@ -159,15 +159,17 @@ pub fn find_path(
 
     g_score.insert(from_index, 0.0);
     openset.push(
-        &from_index,
+        from_index,
         calculate_heuristical_distance(&from, &to, multiplier, min_weight),
     );
 
-    while let Some(current) = openset.pop().cloned() {
+    while let Some(current) = openset.pop() {
         closedset.insert(current);
 
         if current == to_index {
-            todo!("reconstruct path!")
+            // if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
+            // return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
+            return g_score.get(&to_index).cloned();
         }
 
         let current_score = g_score.get(&current).unwrap().clone();
@@ -215,79 +217,25 @@ pub fn find_path(
                 openset.push(neighbour, tentative_f_score);
             } else {
                 // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-                openset.change_value(&neighbour, tentative_f_score);
+                openset.change_value(neighbour, tentative_f_score);
             }
         }
     }
+    None
 }
-
-/*
-/**
-     * Find a path from start to end coordinates
-     * @param start
-     * @param end
-     * @param heuristicMultiplier
-     * @return PathInfo containing the path and path length if available, and the nodes visited
-     */
-    public PathInfo findPath(Coordinates start, Coordinates end, int heuristicMultiplier)
-    {
-        int initialsize = 1000;
-        HybridHeap<Float, Coordinates> openset = new HybridHeap<>();
-        AbstractMap<Coordinates, Integer> closedset = new MapHache<>(initialsize);
-        AbstractMap<Coordinates, Coordinates> camefrom = new MapHache<>(initialsize);
-        AbstractMap<Coordinates, Float> g_score = new MapHache<>(initialsize);
-
-        // Distance from start is obviously 0... good place to start
-        g_score.put(start, 0f);
-        openset.insert(getHDistance(start, end, heuristicMultiplier, terrainMinWeight), start);
-
-        while (!openset.isEmpty())
-        {
-            Coordinates current = openset.deleteMin();  // Get an open node with the lowest f_score, ie the one which looks best at the time
-            closedset.put(current, 0);
-
-            if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
-                return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
-
-            for (Coordinates neighbour : getNeighbours(current))
-            {
-                float weight = calculateWeight(current, neighbour);
-
-                if (weight == -1)    // Wall...
-                    continue;
-
-                float tentative_gscore = g_score.get(current) + weight;
-                Float g_scoreneighbour = g_score.get(neighbour);
-
-                // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-                if (closedset.containsKey(neighbour) && g_scoreneighbour <= tentative_gscore)
-                    continue;
-
-                // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
-                if (g_scoreneighbour == null || tentative_gscore < g_scoreneighbour)
-                {
-                    g_score.put(neighbour, tentative_gscore);
-                    camefrom.put(neighbour, current);
-                }
-
-                // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
-                float tentative_fscore = tentative_gscore + getHDistance(neighbour, end, heuristicMultiplier, terrainMinWeight);
-                if (!openset.containsKey(neighbour) && !closedset.containsKey(neighbour))
-                    openset.insert(tentative_fscore, neighbour);
-
-                // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-                openset.decreaseKey(tentative_fscore, neighbour);
-            }
-        }
-
-        // If we get here, no path was found... return stuff anyway to show pretty graphs
-        return new PathInfo(null, closedset, null);
-    } */
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    /*
+    0  1  2  3  4  5  6  7  8  9
+    10 11 12 13 14 15 16 17 18 19
+    ...
+    80 81 82 83 84 85 86 87 88 89
+    90 91 92 93 94 95 96 97 98 99
+    */
 
     #[test]
     fn test_get_neighbours_top_left() {
@@ -320,12 +268,126 @@ mod tests {
             vec![88, 89, 98]
         );
     }
-}
 
-/*
-0  1  2  3  4  5  6  7  8  9
-10 11 12 13 14 15 16 17 18 19
-...
-80 81 82 83 84 85 86 87 88 89
-90 91 92 93 94 95 96 97 98 99
-*/
+    #[test]
+    fn test_find_path_straigth() {
+        let weights: Vec<f32> = vec![1.0; 100];
+        let height = 10;
+        let width = 10;
+        let multiplier = 1;
+        let min_weight = 1.0;
+
+        assert_eq!(
+            Some(9.0),
+            find_path(
+                Point { x: 0, y: 0 },
+                Point { x: 9, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(9.0),
+            find_path(
+                Point { x: 0, y: 0 },
+                Point { x: 0, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(9.0),
+            find_path(
+                Point { x: 9, y: 0 },
+                Point { x: 0, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(9.0),
+            find_path(
+                Point { x: 0, y: 9 },
+                Point { x: 0, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+    }
+
+    #[test]
+    fn test_find_path_diagonal() {
+        let weights: Vec<f32> = vec![1.0; 100];
+        let height = 10;
+        let width = 10;
+        let multiplier = 1;
+        let min_weight = 1.0;
+
+        assert_eq!(
+            Some(12.727921),
+            find_path(
+                Point { x: 0, y: 0 },
+                Point { x: 9, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(12.727921),
+            find_path(
+                Point { x: 9, y: 0 },
+                Point { x: 0, y: 9 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(12.727921),
+            find_path(
+                Point { x: 9, y: 9 },
+                Point { x: 0, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+
+        assert_eq!(
+            Some(12.727921),
+            find_path(
+                Point { x: 0, y: 9 },
+                Point { x: 9, y: 0 },
+                width,
+                height,
+                multiplier,
+                min_weight,
+                &weights,
+            )
+        );
+    }
+}
