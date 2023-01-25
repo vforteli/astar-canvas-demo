@@ -1,17 +1,17 @@
 use std::{collections::HashMap, hash::Hash};
 
 #[derive(Clone, Copy, Debug)]
-struct HeapItem<'a, K: Eq + Hash + PartialEq, V: Ord + PartialOrd> {
-    key: &'a K,
+struct HeapItem<K: Eq + Hash + PartialEq, V: PartialOrd> {
+    key: K,
     value: V,
 }
 
-pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> {
-    items: Vec<HeapItem<'a, K, V>>,
+pub struct HybridHeap<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> {
+    items: Vec<HeapItem<K, V>>,
     hashmap: HashMap<&'a K, usize>,
 }
 
-impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
+impl<'a, K: Eq + Hash + PartialEq, V: PartialOrd + Copy> HybridHeap<'a, K, V> {
     pub fn new() -> Self {
         HybridHeap {
             items: Vec::with_capacity(1000),
@@ -20,7 +20,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
     }
 
     /// Change value of a key already in heap, this will be bubbled up or down
-    pub fn change_value(&mut self, key: &'a K, new_value: V) {
+    pub fn change_value(&mut self, key: &K, new_value: V) {
         let index = self.hashmap.get(key).unwrap();
 
         let item = self.items.get(*index).unwrap();
@@ -51,17 +51,17 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
     }
 
     /// Push new item with value
-    pub fn push(&mut self, key: &'a K, value: V) {
+    pub fn push(&mut self, key: K, value: V) {
         self.items.push(HeapItem { key, value });
         self.bubble_up(self.items.len() - 1);
     }
 
     /// Pop item
-    pub fn pop(&mut self) -> Option<&K> {
+    pub fn pop(&mut self) -> Option<K> {
         match self.items.get(0) {
             Some(item) => {
                 let key = item.key;
-                self.hashmap.remove(item.key);
+                self.hashmap.remove(&item.key);
 
                 if let Some(last) = self.items.pop() {
                     if self.items.len() > 0 {
@@ -79,7 +79,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
     /// Peek item without removing it
     pub fn peek(&self) -> Option<&K> {
         match self.items.get(0) {
-            Some(item) => Some(item.key),
+            Some(item) => Some(&item.key),
             None => None,
         }
     }
@@ -96,7 +96,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
 
         while index > 0 && self.items.get(parent_index).unwrap().value >= value {
             self.hashmap
-                .insert(self.items.get(parent_index).unwrap().key, index);
+                .insert(&self.items.get(parent_index).unwrap().key, index);
 
             self.items.swap(index, parent_index);
             index = parent_index;
@@ -108,7 +108,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
         }
 
         self.items[index] = HeapItem { key: last, value };
-        self.hashmap.insert(last, index);
+        self.hashmap.insert(&last, index);
     }
 
     fn bubble_down(&mut self, index: usize) {
@@ -134,7 +134,7 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
             }
 
             self.hashmap
-                .insert(self.items.get(smaller_node_index).unwrap().key, index);
+                .insert(&self.items.get(smaller_node_index).unwrap().key, index);
             self.items.swap(index, smaller_node_index);
             index = smaller_node_index;
         }
@@ -143,14 +143,14 @@ impl<'a, K: Eq + Hash + PartialEq, V: Ord + Copy> HybridHeap<'a, K, V> {
             key: bar,
             value: foo,
         };
-        self.hashmap.insert(bar, index);
+        self.hashmap.insert(&bar, index);
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    #[derive(Eq, PartialEq, Hash, Debug)]
+    #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
     struct TestItem {
         some_value: u32,
     }
@@ -209,7 +209,7 @@ mod tests {
 
         let some_other_item = TestItem { some_value: 1 };
 
-        heap.push(&some_item, 2);
+        heap.push(some_item, 2);
 
         assert_eq!(true, heap.contains_key(&some_item));
         assert_eq!(false, heap.contains_key(&some_other_item));
@@ -229,7 +229,7 @@ mod tests {
 
         let some_item = TestItem { some_value: 2 };
 
-        heap.push(&some_item, 2);
+        heap.push(some_item, 2);
 
         let actual = heap.pop();
 
@@ -245,8 +245,8 @@ mod tests {
         let some_item = TestItem { some_value: 2 };
         let some_other_item = TestItem { some_value: 1 };
 
-        heap.push(&some_item, 2);
-        heap.push(&some_other_item, 1);
+        heap.push(some_item, 2);
+        heap.push(some_other_item, 1);
 
         let actual = heap.pop();
 
@@ -260,9 +260,9 @@ mod tests {
         assert!(heap.peek().is_none());
         assert!(heap.pop().is_none());
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert!(!heap.is_empty());
 
@@ -293,9 +293,9 @@ mod tests {
     fn test_change_value_up() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert_eq!(Some(&"second"), heap.peek());
 
@@ -310,9 +310,9 @@ mod tests {
     fn test_change_value_down() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 10);
-        heap.push(&"second", 5);
-        heap.push(&"third", 15);
+        heap.push("first", 10);
+        heap.push("second", 5);
+        heap.push("third", 15);
 
         assert_eq!(Some(&"second"), heap.peek());
         println!("{:?}", heap.items);
@@ -328,8 +328,8 @@ mod tests {
     fn test_insert_lower_value() {
         let mut heap = HybridHeap::new();
 
-        heap.push(&"first", 2);
-        heap.push(&"second", 2);
+        heap.push("first", 2);
+        heap.push("second", 2);
 
         assert_eq!(Some(&"second"), heap.peek());
         assert_eq!(&"second", heap.items.get(0).unwrap().key);
