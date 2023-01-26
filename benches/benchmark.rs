@@ -4,7 +4,7 @@ use astar_rust_wasm::{
     astar::{coordinates_to_index, find_path, Point},
     utils::{normalize, rgb_to_hsv},
 };
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut bytes: &[u8] = include_bytes!("../assets/castle.bmp");

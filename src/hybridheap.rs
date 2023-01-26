@@ -96,56 +96,56 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
 
     fn bubble_up(&mut self, index: usize) {
         let mut index = index;
-        let value = self.items.get(index).unwrap().value;
-        let last = self.items.get(index).unwrap().key;
+        let item = self.items[index];
+
         let mut parent_index = index.checked_sub(1).unwrap_or(0) / 2;
 
-        while index > 0 && self.items.get(parent_index).unwrap().value >= value {
-            self.hashmap
-                .insert(self.items.get(parent_index).unwrap().key, index);
+        while index > 0 && self.items[parent_index].value >= item.value {
+            self.hashmap.insert(self.items[parent_index].key, index);
 
             self.items.swap(index, parent_index);
             index = parent_index;
             parent_index = index.checked_sub(1).unwrap_or(0) / 2;
         }
 
-        self.items[index] = HeapItem { key: last, value };
-        self.hashmap.insert(last, index);
+        self.items[index] = HeapItem {
+            key: item.key,
+            value: item.value,
+        };
+        self.hashmap.insert(item.key, index);
     }
 
     fn bubble_down(&mut self, index: usize) {
         let mut index = index;
-        let foo = self.items.get(index).unwrap().value;
-        let bar = self.items.get(index).unwrap().key;
+        let item = self.items[index];
 
         while index < self.items.len() / 2 {
             let left_child_index = 2 * index + 1;
             let right_child_index = left_child_index + 1;
 
             let smaller_node_index = if right_child_index < self.items.len()
-                && (self.items.get(right_child_index).unwrap().value
-                    < self.items.get(left_child_index).unwrap().value)
+                && (self.items[right_child_index].value < self.items[left_child_index].value)
             {
                 right_child_index
             } else {
                 left_child_index
             };
 
-            if foo <= self.items.get(smaller_node_index).unwrap().value {
+            if item.value <= self.items[smaller_node_index].value {
                 break;
             }
 
             self.hashmap
-                .insert(self.items.get(smaller_node_index).unwrap().key, index);
+                .insert(self.items[smaller_node_index].key, index);
             self.items.swap(index, smaller_node_index);
             index = smaller_node_index;
         }
 
         self.items[index] = HeapItem {
-            key: bar,
-            value: foo,
+            key: item.key,
+            value: item.value,
         };
-        self.hashmap.insert(bar, index);
+        self.hashmap.insert(item.key, index);
     }
 }
 

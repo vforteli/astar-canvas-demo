@@ -46,7 +46,7 @@ pub fn index_to_coordinates(width: u32, index: u32) -> Point {
 
 /// Calculates the weight from one cell to a neighbour. The weight is from the middle of the first cell to the middle of the second cell
 /// Moving diagonally increases weight.
-pub fn calculate_weight(from: Point, to: Point, weights: &Vec<f32>, width: u32) -> f32 {
+pub fn calculate_weight(from: &Point, to: &Point, weights: &Vec<f32>, width: u32) -> f32 {
     let mut to_weight = weights[coordinates_to_index(width, to.x, to.y) as usize];
 
     if to_weight < 0.0 {
@@ -78,7 +78,7 @@ pub fn calculate_heuristical_distance(
 }
 
 /// Get the indexes of neighbouring cells, oob indexes are naturally not returned
-pub fn get_neighbours(point: Point, width: u32, height: u32) -> Vec<u32> {
+pub fn get_neighbours(point: &Point, width: u32, height: u32) -> Vec<u32> {
     let index = coordinates_to_index(width, point.x, point.y);
 
     let mut neighbours: Vec<u32> = Vec::with_capacity(8);
@@ -164,12 +164,8 @@ pub fn find_path(
         calculate_heuristical_distance(&from, &to, multiplier, min_weight),
     );
 
-    while let Some(current) = openset.pop() {
-        if current == to_index {
-            // if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
-            // return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
-            // println!("sup {:?}", g_score.get(&to_index).unwrap().score);
-
+    while let Some(current_index) = openset.pop() {
+        if current_index == to_index {
             return Some(PathResult {
                 total_distance: g_score.get(&to_index).unwrap().score,
                 path_indexes: reconstruct_path(&g_score, to_index),
@@ -177,15 +173,12 @@ pub fn find_path(
             });
         }
 
-        let current_score = g_score[&current];
+        let current_score = g_score[&current_index];
+        let current_point = index_to_coordinates(width, current_index);
 
-        for neighbour in get_neighbours(index_to_coordinates(width, current), width, height) {
-            let weight = calculate_weight(
-                index_to_coordinates(width, current),
-                index_to_coordinates(width, neighbour),
-                &weights,
-                width,
-            );
+        for neighbour in get_neighbours(&current_point, width, height) {
+            let neighbour_point = &index_to_coordinates(width, neighbour);
+            let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
 
             // wall...
             if weight < 1.0 {
@@ -193,36 +186,26 @@ pub fn find_path(
             }
 
             let tentative_g_score = current_score.score + weight;
-            let g_score_neighbour = g_score.get(&neighbour);
 
             // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-            if let Some(score) = g_score_neighbour {
+            if let Some(score) = g_score.get(&neighbour) {
                 // doing this on the same line as above is unstable :/
                 if (*score).score <= tentative_g_score {
                     continue;
                 }
             }
 
-            // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
-            if g_score_neighbour.is_none()
-                || tentative_g_score < (*g_score_neighbour.unwrap()).score
-            {
-                g_score.insert(
-                    neighbour,
-                    VisitedPoint {
-                        score: tentative_g_score,
-                        came_from_key: current,
-                    },
-                );
-            }
+            // // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
+            g_score.insert(
+                neighbour,
+                VisitedPoint {
+                    score: tentative_g_score,
+                    came_from_key: current_index,
+                },
+            );
 
             let tentative_f_score = tentative_g_score
-                + calculate_heuristical_distance(
-                    &index_to_coordinates(width, neighbour),
-                    &to,
-                    multiplier,
-                    min_weight,
-                );
+                + calculate_heuristical_distance(&neighbour_point, &to, multiplier, min_weight);
 
             // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
             // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
@@ -269,7 +252,7 @@ mod tests {
     #[test]
     fn test_get_neighbours_top_left() {
         assert_eq!(
-            get_neighbours(Point { x: 0, y: 0 }, 10, 10),
+            get_neighbours(&Point { x: 0, y: 0 }, 10, 10),
             vec![1, 10, 11]
         );
     }
@@ -277,7 +260,7 @@ mod tests {
     #[test]
     fn test_get_neighbours_top_right() {
         assert_eq!(
-            get_neighbours(Point { x: 9, y: 0 }, 10, 10),
+            get_neighbours(&Point { x: 9, y: 0 }, 10, 10),
             vec![8, 18, 19]
         );
     }
@@ -285,7 +268,7 @@ mod tests {
     #[test]
     fn test_get_neighbours_bottom_left() {
         assert_eq!(
-            get_neighbours(Point { x: 0, y: 9 }, 10, 10),
+            get_neighbours(&Point { x: 0, y: 9 }, 10, 10),
             vec![80, 81, 91]
         );
     }
@@ -293,7 +276,7 @@ mod tests {
     #[test]
     fn test_get_neighbours_bottom_right() {
         assert_eq!(
-            get_neighbours(Point { x: 9, y: 9 }, 10, 10),
+            get_neighbours(&Point { x: 9, y: 9 }, 10, 10),
             vec![88, 89, 98]
         );
     }
