@@ -4,13 +4,19 @@
 <head>
   <meta charset="utf-8">
   <title>Astar stuff</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
   <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
 
-  <p><span id="point-info"></span><span id="path-info"></span></p>
-  <canvas id="board-canvas"></canvas>
+  <div class="container">
+    <div class="controls">
+      <span id="point-info"></span><span id="path-info"></span>
+    </div>
+    <canvas id="board-canvas"></canvas>
+  </div>
+
   <script src="./bootstrap.js"></script>
 </body>
 

@@ -119,9 +119,19 @@ impl Board {
             let pixel_index: usize = ((pixel.y * self.width * 4) + (pixel.x * 4))
                 .try_into()
                 .unwrap();
-            self.frame_data[pixel_index] = 255;
-            self.frame_data[pixel_index + 1] = 0;
+            self.frame_data[pixel_index] = 0;
+            self.frame_data[pixel_index + 1] = 255;
             self.frame_data[pixel_index + 2] = 0;
+        }
+
+        if let Some(p) = &self.path_info {
+            self.frame_data[(p.to_index * 4) as usize] = 255;
+            self.frame_data[((p.to_index * 4) + 1) as usize] = 0;
+            self.frame_data[((p.to_index * 4) + 2) as usize] = 0;
+
+            self.frame_data[(p.from_index * 4) as usize] = 0;
+            self.frame_data[((p.from_index * 4) + 1) as usize] = 255;
+            self.frame_data[((p.from_index * 4) + 2) as usize] = 0;
         }
 
         self.frame_data.as_ptr()

@@ -22,6 +22,8 @@ impl Point {
 }
 
 pub struct PathResult {
+    pub from_index: u32,
+    pub to_index: u32,
     pub total_distance: f32,
     pub path_indexes: HashSet<u32>, // hohum.. maybe return coordinates instead, since that would better reflect the "public api"
     pub visited_indexes: HashMap<u32, VisitedPoint<f32, u32>>, // should be generic..
@@ -167,6 +169,8 @@ pub fn find_path(
     while let Some(current_index) = openset.pop() {
         if current_index == to_index {
             return Some(PathResult {
+                from_index,
+                to_index,
                 total_distance: g_score.get(&to_index).unwrap().score,
                 path_indexes: reconstruct_path(&g_score, to_index),
                 visited_indexes: g_score,

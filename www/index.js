@@ -10,9 +10,6 @@ const width = board.width()
 const height = board.height()
 
 const canvas = document.getElementById("board-canvas")
-
-
-
 canvas.height = height * CELL_SIZE
 canvas.width = width * CELL_SIZE
 canvas.style.width = width * (CELL_SIZE / devicePixelRatio) + "px";
@@ -38,7 +35,7 @@ canvas.addEventListener('click', e => {
     else {
         to = { x, y }
         const distance = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), 1)
-        pathInfoSpan.innerText = `distance: ${distance}`
+        pathInfoSpan.innerText = `distance: ${distance.toFixed(2)}`
     }
 
     renderImage(context)
@@ -58,7 +55,7 @@ canvas.addEventListener('mousemove', e => {
     const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
 
     const cellInfo = board.get_cell_info(x, y)
-    pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo}`
+    pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo.toFixed(2)}`
 }, false);
 
 
@@ -87,6 +84,7 @@ const renderImage = (context) => {
             }
         }
 
+        // vertical grid
         for (let col = 0; col < width; col++) {
             context.beginPath();
             context.fillStyle = `rgba(255,255,255,0.2)`
@@ -96,6 +94,7 @@ const renderImage = (context) => {
             context.stroke();
         }
 
+        // horizontal grid
         for (let row = 0; row < height; row++) {
             context.beginPath();
             context.fillStyle = `rgba(255,255,255,0.2)`
