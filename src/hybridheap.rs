@@ -88,7 +88,7 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
         let mut index = index;
         let value = self.items.get(index).unwrap().value;
         let last = self.items.get(index).unwrap().key;
-        let mut parent_index = if index > 1 { (index - 1) / 2 } else { 0 };
+        let mut parent_index = index.checked_sub(1).unwrap_or(0) / 2;
 
         while index > 0 && self.items.get(parent_index).unwrap().value >= value {
             self.hashmap
@@ -96,11 +96,7 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
 
             self.items.swap(index, parent_index);
             index = parent_index;
-            if index < 1 {
-                break;
-            }
-
-            parent_index = (index - 1) / 2;
+            parent_index = index.checked_sub(1).unwrap_or(0) / 2;
         }
 
         self.items[index] = HeapItem { key: last, value };
