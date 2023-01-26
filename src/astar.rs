@@ -73,10 +73,10 @@ pub fn calculate_heuristical_distance(
     multiplier: u32,
     min_weight: f32,
 ) -> f32 {
-    let x = (from.x as i32 - to.x as i32) as f32 * min_weight;
-    let y = (from.y as i32 - to.y as i32) as f32 * min_weight;
+    let x = (from.x as i32 - to.x as i32).pow(2) as f32 * min_weight;
+    let y = (from.y as i32 - to.y as i32).pow(2) as f32 * min_weight;
 
-    ((x * x + y * y) * multiplier as f32).sqrt()
+    ((x + y) * multiplier as f32).sqrt()
 }
 
 /// Get the indexes of neighbouring cells, oob indexes are naturally not returned
@@ -180,8 +180,8 @@ pub fn find_path(
         let current_score = g_score[&current_index];
         let current_point = index_to_coordinates(width, current_index);
 
-        for neighbour in get_neighbours(&current_point, width, height) {
-            let neighbour_point = &index_to_coordinates(width, neighbour);
+        for neighbour_index in get_neighbours(&current_point, width, height) {
+            let neighbour_point = &index_to_coordinates(width, neighbour_index);
             let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
 
             // wall...
@@ -192,32 +192,28 @@ pub fn find_path(
             let tentative_g_score = current_score.score + weight;
 
             // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-            if let Some(score) = g_score.get(&neighbour) {
-                // doing this on the same line as above is unstable :/
-                if (*score).score <= tentative_g_score {
-                    continue;
-                }
-            }
-
-            // // If this is the first time at the neighbour, or the gscore through the current node is better, update stuff
-            g_score.insert(
-                neighbour,
-                VisitedPoint {
-                    score: tentative_g_score,
-                    came_from_key: current_index,
-                },
-            );
+            // otherwise upsert the new score
+            match g_score.get(&neighbour_index) {
+                Some(p) if (*p).score <= tentative_g_score => continue,
+                _ => g_score.insert(
+                    neighbour_index,
+                    VisitedPoint {
+                        score: tentative_g_score,
+                        came_from_key: current_index,
+                    },
+                ),
+            };
 
             let tentative_f_score = tentative_g_score
                 + calculate_heuristical_distance(&neighbour_point, &to, multiplier, min_weight);
 
             // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
             // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-            match openset.get_value(neighbour) {
-                Some(value) if value > tentative_f_score => {
-                    openset.change_value(neighbour, tentative_f_score)
+            match openset.get_value(neighbour_index) {
+                Some(v) if v > tentative_f_score => {
+                    openset.change_value(neighbour_index, tentative_f_score)
                 }
-                _ => openset.push(neighbour, tentative_f_score),
+                _ => openset.push(neighbour_index, tentative_f_score),
             };
         }
     }
