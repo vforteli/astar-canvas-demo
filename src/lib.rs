@@ -4,12 +4,12 @@ pub mod utils;
 
 use std::{convert::TryInto, vec};
 
-use astar::Point;
+use astar::{PathResult, Point};
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    astar::coordinates_to_index,
+    astar::{coordinates_to_index, find_path},
     utils::{normalize, rgb_to_hsv},
 };
 
@@ -44,6 +44,7 @@ pub struct Board {
     frame_data: Vec<u8>,
     start_pixel: Option<Point>,
     cell_weights: Vec<f32>,
+    path_info: Option<PathResult>,
 }
 
 #[wasm_bindgen]
@@ -61,6 +62,7 @@ impl Board {
             frame_data: vec![0; (width * height * 4).try_into().unwrap()],
             start_pixel: None,
             cell_weights: vec![0.0; (width * height).try_into().unwrap()],
+            path_info: None,
         }
     }
 
@@ -78,10 +80,36 @@ impl Board {
                 let i = (y * self.width + x) * 4;
                 let pixel = self.image.get_pixel(x, y);
 
-                self.frame_data[i as usize] = pixel.r;
-                self.frame_data[(i + 1) as usize] = pixel.g;
-                self.frame_data[(i + 2) as usize] = pixel.b;
-                self.frame_data[(i + 3) as usize] = 255;
+                if self.path_info.is_some()
+                    && self
+                        .path_info
+                        .as_ref()
+                        .unwrap()
+                        .path_indexes
+                        .contains(&coordinates_to_index(self.width, x, y))
+                {
+                    self.frame_data[i as usize] = 100;
+                    self.frame_data[(i + 1) as usize] = 100;
+                    self.frame_data[(i + 2) as usize] = 100;
+                    self.frame_data[(i + 3) as usize] = 255;
+                } else if self.path_info.is_some()
+                    && self
+                        .path_info
+                        .as_ref()
+                        .unwrap()
+                        .visited_indexes
+                        .contains_key(&coordinates_to_index(self.width, x, y))
+                {
+                    self.frame_data[i as usize] = pixel.r.checked_sub(40).unwrap_or(pixel.r);
+                    self.frame_data[(i + 1) as usize] = pixel.g.checked_sub(40).unwrap_or(pixel.g);
+                    self.frame_data[(i + 2) as usize] = pixel.b.checked_sub(40).unwrap_or(pixel.b);
+                    self.frame_data[(i + 3) as usize] = 255;
+                } else {
+                    self.frame_data[i as usize] = pixel.r;
+                    self.frame_data[(i + 1) as usize] = pixel.g;
+                    self.frame_data[(i + 2) as usize] = pixel.b;
+                    self.frame_data[(i + 3) as usize] = 255;
+                }
 
                 let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
                 let inverted_brighntess = (hsv.brightness - 1.0).abs();
@@ -122,5 +150,19 @@ impl Board {
     pub fn get_cell_info(&mut self, x: u32, y: u32) -> Option<f32> {
         let index = coordinates_to_index(self.width, x, y);
         self.cell_weights.get(index as usize).copied()
+    }
+
+    pub fn calculate_path(&mut self, from: Point, to: Point, multiplier: u32) {
+        let result = find_path(
+            from,
+            to,
+            self.width,
+            self.height,
+            multiplier,
+            TERRAIN_MIN_WEIGHT as f32,
+            &self.cell_weights,
+        );
+
+        self.path_info = result;
     }
 }

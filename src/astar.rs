@@ -1,16 +1,25 @@
 use std::{
     collections::{HashMap, HashSet},
     convert::TryInto,
-    hash::Hash,
     ops::Mul,
 };
 
+use wasm_bindgen::prelude::wasm_bindgen;
+
 use crate::hybridheap::HybridHeap;
 
+#[wasm_bindgen]
 #[derive(Clone)]
 pub struct Point {
     pub x: u32,
     pub y: u32,
+}
+
+#[wasm_bindgen]
+impl Point {
+    pub fn new(x: u32, y: u32) -> Self {
+        Self { x, y }
+    }
 }
 
 pub struct PathResult {

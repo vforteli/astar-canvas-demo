@@ -46,10 +46,6 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
         self.hashmap.contains_key(&key)
     }
 
-    pub fn get_value(self, key: &K) -> V {
-        todo!()
-    }
-
     /// Push new item with value
     pub fn push(&mut self, key: K, value: V) {
         self.items.push(HeapItem { key, value });
