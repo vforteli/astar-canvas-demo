@@ -21,22 +21,22 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
 
     /// Change value of a key already in heap, this will be bubbled up or down
     pub fn change_value(&mut self, key: K, new_value: V) {
-        let index = self.hashmap.get(&key).unwrap();
+        let index = self.hashmap[&key];
 
-        let item = self.items.get(*index).unwrap();
+        let item = self.items[index];
 
         if item.value > new_value {
-            self.items[*index] = HeapItem {
+            self.items[index] = HeapItem {
                 key: item.key,
                 value: new_value,
             };
-            Some(self.bubble_up(*index))
+            Some(self.bubble_up(index))
         } else if item.value < new_value {
-            self.items[*index] = HeapItem {
+            self.items[index] = HeapItem {
                 key: item.key,
                 value: new_value,
             };
-            Some(self.bubble_down(*index))
+            Some(self.bubble_down(index))
         } else {
             None
         };
