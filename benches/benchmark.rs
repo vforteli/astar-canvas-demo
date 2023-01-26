@@ -1,6 +1,9 @@
 use std::convert::TryInto;
 
-use astar_rust_wasm::astar::{coordinates_to_index, find_path, normalize, rgb_to_hsv, Point};
+use astar_rust_wasm::{
+    astar::{coordinates_to_index, find_path, Point},
+    utils::{normalize, rgb_to_hsv},
+};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {

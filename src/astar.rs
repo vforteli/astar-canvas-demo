@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     convert::TryInto,
+    hash::Hash,
     ops::Mul,
 };
 
@@ -12,39 +13,18 @@ pub struct Point {
     pub y: u32,
 }
 
-pub struct HSV {
-    pub hue: f32,
-    pub saturation: f32,
-    pub brightness: f32,
+pub struct PathResult {
+    pub total_distance: f32,
+    pub path_indexes: HashSet<u32>, // hohum.. maybe return coordinates instead, since that would better reflect the "public api"
+    pub visited_indexes: HashMap<u32, VisitedPoint<f32, u32>>, // should be generic..
 }
 
 #[derive(Clone, Copy)]
-struct VisitedPoint<S, K> {
+pub struct VisitedPoint<S, K> {
     pub score: S,
     pub came_from_key: K,
 }
 
-pub fn rgb_to_hsv(r: u8, g: u8, b: u8) -> HSV {
-    let r = r as f32 / 255.0;
-    let g = g as f32 / 255.0;
-    let b = b as f32 / 255.0;
-
-    HSV {
-        hue: 0.0,
-        saturation: 0.0,
-        brightness: r.max(g).max(b),
-    }
-}
-
-pub fn normalize(
-    input_min: f32,
-    input_max: f32,
-    output_min: f32,
-    output_max: f32,
-    value: f32,
-) -> f32 {
-    output_min + (value - input_min) * (output_max - output_min) / (input_max - input_min)
-}
 pub fn coordinates_to_index(width: u32, x: u32, y: u32) -> u32 {
     y * width + x
 }
@@ -154,7 +134,7 @@ pub fn find_path(
     multiplier: u32,
     min_weight: f32,
     weights: &Vec<f32>,
-) -> Option<f32> {
+) -> Option<PathResult> {
     // openset contains seen nodes which havent yet been visited
     let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
 
@@ -180,13 +160,16 @@ pub fn find_path(
     );
 
     while let Some(current) = openset.pop() {
-        // closedset.insert(current);
-
         if current == to_index {
             // if (current.equals(end))    // Yaayy! A path was found, and if A* works it should be the shortest one :p
             // return new PathInfo(reconstructPath(current, camefrom), closedset, g_score.get(end));
-            println!("sup {:?}", g_score.get(&to_index).unwrap().score);
-            return Some(g_score.get(&to_index).unwrap().score);
+            // println!("sup {:?}", g_score.get(&to_index).unwrap().score);
+
+            return Some(PathResult {
+                total_distance: g_score.get(&to_index).unwrap().score,
+                path_indexes: reconstruct_path(&g_score, to_index),
+                visited_indexes: g_score,
+            });
         }
 
         let current_score = g_score[&current];
@@ -248,6 +231,22 @@ pub fn find_path(
     None
 }
 
+fn reconstruct_path(visited: &HashMap<u32, VisitedPoint<f32, u32>>, to_key: u32) -> HashSet<u32> {
+    let mut foo = HashSet::new();
+    let mut key = to_key;
+
+    while let Some(index) = visited.get(&key) {
+        if key == index.came_from_key {
+            break;
+        }
+
+        foo.insert(index.came_from_key);
+        key = index.came_from_key;
+    }
+
+    foo
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -301,9 +300,8 @@ mod tests {
         let multiplier = 1;
         let min_weight = 1.0;
 
-        assert_eq!(
-            Some(9.0),
-            find_path(
+        {
+            let result = find_path(
                 Point { x: 0, y: 0 },
                 Point { x: 9, y: 0 },
                 width,
@@ -312,11 +310,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(9.0),
-            find_path(
+            assert_eq!(9.0, result.total_distance);
+            assert_eq!(
+                HashSet::from([7, 4, 2, 0, 5, 8, 6, 3, 1]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 0, y: 0 },
                 Point { x: 0, y: 9 },
                 width,
@@ -325,11 +329,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(9.0),
-            find_path(
+            assert_eq!(9.0, result.total_distance);
+            assert_eq!(
+                HashSet::from([30, 10, 80, 60, 0, 70, 50, 20, 40]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 9, y: 0 },
                 Point { x: 0, y: 0 },
                 width,
@@ -338,11 +348,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(9.0),
-            find_path(
+            assert_eq!(9.0, result.total_distance);
+            assert_eq!(
+                HashSet::from([2, 5, 7, 4, 8, 1, 3, 6, 9]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 0, y: 9 },
                 Point { x: 0, y: 0 },
                 width,
@@ -351,7 +367,14 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
+
+            assert_eq!(9.0, result.total_distance);
+            assert_eq!(
+                HashSet::from([60, 70, 10, 40, 90, 80, 20, 30, 50]),
+                result.path_indexes
+            );
+        }
     }
 
     #[test]
@@ -362,9 +385,8 @@ mod tests {
         let multiplier = 1;
         let min_weight = 1.0;
 
-        assert_eq!(
-            Some(12.727921),
-            find_path(
+        {
+            let result = find_path(
                 Point { x: 0, y: 0 },
                 Point { x: 9, y: 9 },
                 width,
@@ -373,11 +395,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(12.727921),
-            find_path(
+            assert_eq!(12.727921, result.total_distance);
+            assert_eq!(
+                HashSet::from([55, 11, 44, 0, 77, 66, 88, 33, 22]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 9, y: 0 },
                 Point { x: 0, y: 9 },
                 width,
@@ -386,11 +414,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(12.727921),
-            find_path(
+            assert_eq!(12.727921, result.total_distance);
+            assert_eq!(
+                HashSet::from([45, 72, 63, 27, 36, 54, 18, 9, 81]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 9, y: 9 },
                 Point { x: 0, y: 0 },
                 width,
@@ -399,11 +433,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(12.727921),
-            find_path(
+            assert_eq!(12.727921, result.total_distance);
+            assert_eq!(
+                HashSet::from([22, 55, 99, 66, 11, 44, 88, 33, 77]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 0, y: 9 },
                 Point { x: 9, y: 0 },
                 width,
@@ -412,7 +452,14 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
+
+            assert_eq!(12.727921, result.total_distance);
+            assert_eq!(
+                HashSet::from([36, 81, 18, 63, 90, 27, 45, 54, 72]),
+                result.path_indexes
+            );
+        }
     }
 
     #[test]
@@ -433,9 +480,8 @@ mod tests {
         let multiplier = 1;
         let min_weight = 1.0;
 
-        assert_eq!(
-            Some(9.0),
-            find_path(
+        {
+            let result = find_path(
                 Point { x: 0, y: 0 },
                 Point { x: 9, y: 0 },
                 width,
@@ -444,11 +490,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(13.5),
-            find_path(
+            assert_eq!(9.0, result.total_distance);
+            assert_eq!(
+                HashSet::from([2, 0, 6, 1, 8, 7, 5, 4, 3]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 0, y: 0 },
                 Point { x: 0, y: 9 },
                 width,
@@ -457,11 +509,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(13.5),
-            find_path(
+            assert_eq!(13.5, result.total_distance);
+            assert_eq!(
+                HashSet::from([60, 20, 70, 80, 10, 0, 40, 50, 30]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 9, y: 0 },
                 Point { x: 9, y: 9 },
                 width,
@@ -470,11 +528,17 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
 
-        assert_eq!(
-            Some(11.242641),
-            find_path(
+            assert_eq!(13.5, result.total_distance);
+            assert_eq!(
+                HashSet::from([79, 59, 89, 19, 39, 69, 9, 49, 29]),
+                result.path_indexes
+            );
+        }
+
+        {
+            let result = find_path(
                 Point { x: 9, y: 9 },
                 Point { x: 0, y: 9 },
                 width,
@@ -483,6 +547,13 @@ mod tests {
                 min_weight,
                 &weights,
             )
-        );
+            .unwrap();
+
+            assert_eq!(11.242641, result.total_distance);
+            assert_eq!(
+                HashSet::from([84, 82, 81, 83, 86, 85, 99, 88, 87]),
+                result.path_indexes
+            );
+        }
     }
 }

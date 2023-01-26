@@ -1,6 +1,6 @@
 pub mod astar;
 pub mod hybridheap;
-mod utils;
+pub mod utils;
 
 use std::{convert::TryInto, vec};
 
@@ -8,7 +8,10 @@ use astar::Point;
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
-use crate::astar::{coordinates_to_index, normalize, rgb_to_hsv};
+use crate::{
+    astar::coordinates_to_index,
+    utils::{normalize, rgb_to_hsv},
+};
 
 const TERRAIN_MIN_WEIGHT: u32 = 1;
 const TERRAIN_MAX_WEIGHT: u32 = 10;
