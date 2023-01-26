@@ -1,6 +1,5 @@
 use std::{
     collections::{HashMap, HashSet},
-    convert::TryInto,
     ops::Mul,
 };
 
@@ -80,24 +79,24 @@ pub fn calculate_heuristical_distance(
 
 /// Get the indexes of neighbouring cells, oob indexes are naturally not returned
 pub fn get_neighbours(point: Point, width: u32, height: u32) -> Vec<u32> {
-    let index: i64 = coordinates_to_index(width, point.x, point.y).into();
+    let index = coordinates_to_index(width, point.x, point.y);
 
-    let mut neighbours: Vec<u32> = Vec::new();
+    let mut neighbours: Vec<u32> = Vec::with_capacity(8);
 
     // top row
     if point.y > 0 {
         let row_left = (point.y - 1) * width;
         let row_right = row_left + width - 1;
-        let top = index - width as i64;
+        let top = index - width;
 
-        if top > row_left.into() {
-            neighbours.push((top - 1).try_into().unwrap());
+        if top > row_left {
+            neighbours.push(top - 1);
         }
 
-        neighbours.push(top.try_into().unwrap());
+        neighbours.push(top);
 
-        if top < row_right.into() {
-            neighbours.push((top + 1).try_into().unwrap());
+        if top < row_right {
+            neighbours.push(top + 1);
         }
     }
 
@@ -106,11 +105,11 @@ pub fn get_neighbours(point: Point, width: u32, height: u32) -> Vec<u32> {
         let row_left = (point.y) * width;
         let row_right = row_left + width - 1;
 
-        if index > row_left.into() {
-            neighbours.push((index - 1).try_into().unwrap());
+        if index > row_left {
+            neighbours.push(index - 1);
         }
-        if index < row_right.into() {
-            neighbours.push((index + 1).try_into().unwrap());
+        if index < row_right {
+            neighbours.push(index + 1);
         }
     }
 
@@ -118,16 +117,16 @@ pub fn get_neighbours(point: Point, width: u32, height: u32) -> Vec<u32> {
     if point.y < (height - 1) {
         let row_left = (point.y + 1) * width;
         let row_right = row_left + width - 1;
-        let bottom = index + width as i64;
+        let bottom = index + width;
 
-        if bottom > row_left.into() {
-            neighbours.push((bottom - 1).try_into().unwrap());
+        if bottom > row_left {
+            neighbours.push(bottom - 1);
         }
 
-        neighbours.push(bottom.try_into().unwrap());
+        neighbours.push(bottom);
 
-        if bottom < row_right.into() {
-            neighbours.push((bottom + 1).try_into().unwrap());
+        if bottom < row_right {
+            neighbours.push(bottom + 1);
         }
     }
 
@@ -146,9 +145,6 @@ pub fn find_path(
 ) -> Option<PathResult> {
     // openset contains seen nodes which havent yet been visited
     let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
-
-    // closed set contains nodes that have been visited, but may still be visited again if a better score can be achieved
-    // let mut closedset: HashSet<u32> = HashSet::new();
 
     // g scores contains the currently best scores for visited nodes and from where we ended up here
     let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::new();
@@ -229,12 +225,13 @@ pub fn find_path(
                 );
 
             // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
-            if !openset.contains_key(&neighbour) {
-                openset.push(neighbour, tentative_f_score);
-            } else {
-                // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-                openset.change_value(neighbour, tentative_f_score);
-            }
+            // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
+            match openset.get_value(neighbour) {
+                Some(value) if value > tentative_f_score => {
+                    openset.change_value(neighbour, tentative_f_score)
+                }
+                _ => openset.push(neighbour, tentative_f_score),
+            };
         }
     }
     None
