@@ -22,21 +22,6 @@ const TERRAIN_MAX_WEIGHT: u32 = 10;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern "C" {
-    fn alert(s: &str);
-}
-
-#[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, astar-rust-wasm!");
-}
-
-#[wasm_bindgen]
-pub fn click(x: u32, y: u32) {
-    alert(format!("clicked {}:{}!", x, y).as_str());
-}
-
-#[wasm_bindgen]
 pub struct Board {
     width: u32,
     height: u32,
@@ -113,13 +98,17 @@ impl Board {
 
                 let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
                 let inverted_brighntess = (hsv.brightness - 1.0).abs();
-                let normalized_brighntess = normalize(
-                    0.0,
-                    1.0,
-                    TERRAIN_MIN_WEIGHT as f32,
-                    TERRAIN_MAX_WEIGHT as f32,
-                    inverted_brighntess,
-                );
+                let normalized_brighntess = if hsv.brightness < 0.05 {
+                    -1.0
+                } else {
+                    normalize(
+                        0.0,
+                        1.0,
+                        TERRAIN_MIN_WEIGHT as f32,
+                        TERRAIN_MAX_WEIGHT as f32,
+                        inverted_brighntess,
+                    )
+                };
 
                 self.cell_weights[coordinates_to_index(self.width, x, y) as usize] =
                     normalized_brighntess;
