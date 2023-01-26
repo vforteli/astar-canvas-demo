@@ -1,6 +1,8 @@
 import { Board, Point } from "astar-wasm";
 import { memory } from "astar-wasm/astar_rust_wasm_bg.wasm";
 
+// todo hnnnhgh, typescript please
+
 const CELL_SIZE = 5 * devicePixelRatio
 
 const board = Board.new()
@@ -17,27 +19,44 @@ canvas.style.width = width * (CELL_SIZE / devicePixelRatio) + "px";
 canvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
 
 const pointInfoSpan = document.getElementById("point-info")
+const pathInfoSpan = document.getElementById("path-info")
 
 const context = canvas.getContext('2d');
+
+let from = undefined;
+let to = undefined;
 
 
 canvas.addEventListener('click', e => {
     const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
     const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
 
-    const from = Point.new(0, 0)
-    const to = Point.new(x, y)
+    if (!from) {
+        from = { x, y }
+        board.click_cell(x, y)
+    }
+    else {
+        to = { x, y }
+        const distance = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), 1)
+        pathInfoSpan.innerText = `distance: ${distance}`
+    }
 
-    const distance = board.calculate_path(from, to, 1)
-
-    console.debug(`length: ${distance}`)
-    board.click_cell(x, y)
     renderImage(context)
 }, false);
 
+canvas.addEventListener('contextmenu', e => {
+    const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
+    const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
+    from = { x, y }
+    board.click_cell(x, y)
+    renderImage(context)
+    e.preventDefault();
+}, false);
+
 canvas.addEventListener('mousemove', e => {
-    const x = Math.floor(e.layerX / 5)
-    const y = Math.floor(e.layerY / 5)
+    const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
+    const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
+
     const cellInfo = board.get_cell_info(x, y)
     pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo}`
 }, false);

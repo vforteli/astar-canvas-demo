@@ -132,6 +132,7 @@ impl Board {
     }
 
     pub fn click_cell(&mut self, x: u32, y: u32) {
+        self.path_info = None;
         self.start_pixel = Some(Point { x, y });
     }
 
@@ -141,8 +142,10 @@ impl Board {
         self.cell_weights.get(index as usize).copied()
     }
 
-    pub fn calculate_path(&mut self, from: Point, to: Point, multiplier: u32) {
-        let result = find_path(
+    /// Calculates path. Call render again after this to get the output...
+    /// Returns total weight of path
+    pub fn calculate_path(&mut self, from: Point, to: Point, multiplier: u32) -> Option<f32> {
+        self.path_info = find_path(
             from,
             to,
             self.width,
@@ -152,6 +155,6 @@ impl Board {
             &self.cell_weights,
         );
 
-        self.path_info = result;
+        self.path_info.as_ref().and_then(|v| Some(v.total_distance))
     }
 }
