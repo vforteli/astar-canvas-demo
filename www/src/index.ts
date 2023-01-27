@@ -1,7 +1,8 @@
-import { Board, Point } from "astar-wasm";
-import { memory } from "astar-wasm/astar_rust_wasm_bg.wasm";
+import init, { Board, Point } from 'astar-wasm/astar_rust_wasm'
 
-// todo hnnnhgh, typescript please
+const wasmInit = await init()
+const memory = wasmInit.memory
+
 
 const CELL_SIZE = 5 * devicePixelRatio
 
@@ -9,57 +10,27 @@ const board = Board.new()
 const width = board.width()
 const height = board.height()
 
-const canvas = document.getElementById("board-canvas")
+const canvas = document.getElementById("board-canvas") as HTMLCanvasElement
 canvas.height = height * CELL_SIZE
 canvas.width = width * CELL_SIZE
 canvas.style.width = width * (CELL_SIZE / devicePixelRatio) + "px";
 canvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
 
-const pointInfoSpan = document.getElementById("point-info")
-const pathInfoSpan = document.getElementById("path-info")
+const pointInfoSpan = document.getElementById("point-info") as HTMLElement
+const pathInfoSpan = document.getElementById("path-info") as HTMLElement
 
 const context = canvas.getContext('2d');
 
-let from = undefined;
-let to = undefined;
+type Pointy = {
+    x: number,
+    y: number,
+}
+
+let from: Pointy | undefined = undefined;
+let to: Pointy | undefined = undefined;
 
 
-canvas.addEventListener('click', e => {
-    const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
-    const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
-
-    if (!from) {
-        from = { x, y }
-        board.click_cell(x, y)
-    }
-    else {
-        to = { x, y }
-        const distance = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), 1)
-        pathInfoSpan.innerText = `distance: ${distance.toFixed(2)}`
-    }
-
-    renderImage(context)
-}, false);
-
-canvas.addEventListener('contextmenu', e => {
-    const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
-    const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
-    from = { x, y }
-    board.click_cell(x, y)
-    renderImage(context)
-    e.preventDefault();
-}, false);
-
-canvas.addEventListener('mousemove', e => {
-    const x = Math.floor(e.layerX / (CELL_SIZE / devicePixelRatio))
-    const y = Math.floor(e.layerY / (CELL_SIZE / devicePixelRatio))
-
-    const cellInfo = board.get_cell_info(x, y)
-    pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo.toFixed(2)}`
-}, false);
-
-
-const renderImage = (context) => {
+const renderImage = (context: CanvasRenderingContext2D) => {
     if (context) {
         const buffer = new Uint8Array(memory.buffer, board.render(), width * height * 4)
         const imageDataRaw = new Uint8ClampedArray(buffer)
@@ -108,5 +79,39 @@ const renderImage = (context) => {
 
 
 if (context) {
+    canvas.addEventListener('click', e => {
+        const x = Math.floor(e.offsetX / (CELL_SIZE / devicePixelRatio))
+        const y = Math.floor(e.offsetY / (CELL_SIZE / devicePixelRatio))
+
+        if (!from) {
+            from = { x, y }
+            board.click_cell(x, y)
+        }
+        else {
+            to = { x, y }
+            const distance = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), 1)
+            pathInfoSpan.innerText = `distance: ${distance?.toFixed(2)}`
+        }
+
+        renderImage(context)
+    }, false);
+
+    canvas.addEventListener('contextmenu', e => {
+        const x = Math.floor(e.offsetX / (CELL_SIZE / devicePixelRatio))
+        const y = Math.floor(e.offsetY / (CELL_SIZE / devicePixelRatio))
+        from = { x, y }
+        board.click_cell(x, y)
+        renderImage(context)
+        e.preventDefault();
+    }, false);
+
+    canvas.addEventListener('mousemove', e => {
+        const x = Math.floor(e.offsetX / (CELL_SIZE / devicePixelRatio))
+        const y = Math.floor(e.offsetY / (CELL_SIZE / devicePixelRatio))
+
+        const cellInfo = board.get_cell_info(x, y)
+        pointInfoSpan.innerText = `x: ${x}, y: ${y}, weight: ${cellInfo?.toFixed(2)}`
+    }, false);
+
     renderImage(context)
 }
