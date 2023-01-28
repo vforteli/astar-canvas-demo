@@ -91,7 +91,6 @@ if (context) {
         if (!from) {
             from = point
             board.click_cell(point.x, point.y)
-
         }
         else {
             to = point
