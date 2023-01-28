@@ -221,7 +221,7 @@ pub fn find_path(
 }
 
 fn reconstruct_path(visited: &HashMap<u32, VisitedPoint<f32, u32>>, to_key: u32) -> HashSet<u32> {
-    let mut foo = HashSet::new();
+    let mut path = HashSet::new();
     let mut key = to_key;
 
     while let Some(index) = visited.get(&key) {
@@ -229,11 +229,11 @@ fn reconstruct_path(visited: &HashMap<u32, VisitedPoint<f32, u32>>, to_key: u32)
             break;
         }
 
-        foo.insert(index.came_from_key);
+        path.insert(index.came_from_key);
         key = index.came_from_key;
     }
 
-    foo
+    path
 }
 
 #[cfg(test)]
