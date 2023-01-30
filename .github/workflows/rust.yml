@@ -64,10 +64,12 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   
+    - uses: actions/download-artifact@v3
   
-    # az storage blob upload-batch --account-name astarwasmdemo -d '$web' -s ./dist/ --overwrite 
-    - name: 'blerp'
-      run: |
-          az account show
-          az group list
-          pwd 
+    - name: Upload
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az storage blob upload-batch --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} -d '$web' -s ./dist/ --overwrite 
+    
+    
