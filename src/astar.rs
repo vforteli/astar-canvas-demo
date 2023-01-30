@@ -149,10 +149,10 @@ pub fn find_path(
     weights: &Vec<f32>,
 ) -> Option<PathResult> {
     // openset contains seen nodes which havent yet been visited
-    let mut openset: HybridHeap<u32, f32> = HybridHeap::new();
+    let mut openset: HybridHeap<u32, f32> = HybridHeap::with_capacity(1000);
 
     // g scores contains the currently best scores for visited nodes and from where we ended up here
-    let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::new();
+    let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::with_capacity(1000);
 
     let from_index = from.to_1d_index(width);
     let to_index = to.to_1d_index(width);
