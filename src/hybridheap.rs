@@ -14,8 +14,15 @@ pub struct HybridHeap<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> {
 impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
     pub fn new() -> Self {
         HybridHeap {
-            items: Vec::with_capacity(1000),
+            items: Vec::new(),
             hashmap: HashMap::new(),
+        }
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        HybridHeap {
+            items: Vec::with_capacity(capacity),
+            hashmap: HashMap::with_capacity(capacity),
         }
     }
 
