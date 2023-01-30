@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use astar_rust_wasm::{
-    astar::{coordinates_to_index, find_path, Point},
+    astar::{find_path, Point},
     utils::{normalize, rgb_to_hsv},
 };
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -21,7 +21,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let inverted_brighntess = (hsv.brightness - 1.0).abs();
             let normalized_brighntess = normalize(0.0, 1.0, 1.0, 10.0, inverted_brighntess);
 
-            cell_weights[coordinates_to_index(width, x, y) as usize] = normalized_brighntess;
+            cell_weights[Point::new(x, y).to_1d_index(width) as usize] = normalized_brighntess;
         }
     }
 

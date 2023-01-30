@@ -9,7 +9,7 @@ use bmp::Image;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    astar::{coordinates_to_index, find_path},
+    astar::find_path,
     utils::{normalize, rgb_to_hsv},
 };
 
@@ -71,7 +71,7 @@ impl Board {
                         .as_ref()
                         .unwrap()
                         .path_indexes
-                        .contains(&coordinates_to_index(self.width, x, y))
+                        .contains(&Point::new(x, y).to_1d_index(self.width))
                 {
                     self.frame_data[i as usize] = 100;
                     self.frame_data[(i + 1) as usize] = 100;
@@ -83,7 +83,7 @@ impl Board {
                         .as_ref()
                         .unwrap()
                         .visited_indexes
-                        .contains_key(&coordinates_to_index(self.width, x, y))
+                        .contains_key(&Point::new(x, y).to_1d_index(self.width))
                 {
                     self.frame_data[i as usize] = pixel.r.checked_sub(40).unwrap_or(pixel.r);
                     self.frame_data[(i + 1) as usize] = pixel.g.checked_sub(40).unwrap_or(pixel.g);
@@ -110,7 +110,7 @@ impl Board {
                     )
                 };
 
-                self.cell_weights[coordinates_to_index(self.width, x, y) as usize] =
+                self.cell_weights[Point::new(x, y).to_1d_index(self.width) as usize] =
                     normalized_brighntess;
             }
         }
@@ -148,7 +148,7 @@ impl Board {
 
     /// Get cell info... currently just the weight
     pub fn get_cell_info(&mut self, x: u32, y: u32) -> Option<f32> {
-        let index = coordinates_to_index(self.width, x, y);
+        let index = Point::new(x, y).to_1d_index(self.width);
         self.cell_weights.get(index as usize).copied()
     }
 

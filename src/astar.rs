@@ -19,6 +19,19 @@ impl Point {
     pub fn new(x: u32, y: u32) -> Self {
         Self { x, y }
     }
+
+    #[inline(always)]
+    pub fn to_1d_index(&self, width: u32) -> u32 {
+        self.y * width + self.x
+    }
+
+    #[inline(always)]
+    pub fn from_1d_index(width: u32, index: u32) -> Self {
+        Point {
+            x: index % width,
+            y: index / width,
+        }
+    }
 }
 
 pub struct PathResult {
@@ -35,27 +48,17 @@ pub struct VisitedPoint<S, K> {
     pub came_from_key: K,
 }
 
-pub fn coordinates_to_index(width: u32, x: u32, y: u32) -> u32 {
-    y * width + x
-}
-
-pub fn index_to_coordinates(width: u32, index: u32) -> Point {
-    Point {
-        x: index % width,
-        y: index / width,
-    }
-}
-
 /// Calculates the weight from one cell to a neighbour. The weight is from the middle of the first cell to the middle of the second cell
 /// Moving diagonally increases weight.
+#[inline(always)]
 pub fn calculate_weight(from: &Point, to: &Point, weights: &Vec<f32>, width: u32) -> f32 {
-    let mut to_weight = weights[coordinates_to_index(width, to.x, to.y) as usize];
+    let mut to_weight = weights[to.to_1d_index(width) as usize];
 
     if to_weight < 0.0 {
         return to_weight;
     }
 
-    let mut from_weight = weights[coordinates_to_index(width, from.x, from.y) as usize];
+    let mut from_weight = weights[from.to_1d_index(width) as usize];
 
     if from.x != to.x && from.y != to.y {
         from_weight = from_weight.powi(2).mul(2.0).sqrt();
@@ -81,7 +84,7 @@ pub fn calculate_heuristical_distance(
 
 /// Get the indexes of neighbouring cells, oob indexes are naturally not returned
 pub fn get_neighbours(point: &Point, width: u32, height: u32) -> Vec<u32> {
-    let index = coordinates_to_index(width, point.x, point.y);
+    let index = point.to_1d_index(width);
 
     let mut neighbours: Vec<u32> = Vec::with_capacity(8);
 
@@ -151,8 +154,8 @@ pub fn find_path(
     // g scores contains the currently best scores for visited nodes and from where we ended up here
     let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::new();
 
-    let from_index = coordinates_to_index(width, from.x, from.y);
-    let to_index = coordinates_to_index(width, to.x, to.y);
+    let from_index = from.to_1d_index(width);
+    let to_index = to.to_1d_index(width);
 
     g_score.insert(
         from_index,
@@ -178,10 +181,10 @@ pub fn find_path(
         }
 
         let current_score = g_score[&current_index];
-        let current_point = index_to_coordinates(width, current_index);
+        let current_point = Point::from_1d_index(width, current_index);
 
         for neighbour_index in get_neighbours(&current_point, width, height) {
-            let neighbour_point = &index_to_coordinates(width, neighbour_index);
+            let neighbour_point = Point::from_1d_index(width, neighbour_index);
             let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
 
             // wall...
