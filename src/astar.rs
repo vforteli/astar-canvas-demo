@@ -42,6 +42,13 @@ pub struct PathResult {
     pub visited_indexes: HashMap<u32, VisitedPoint<f32, u32>>, // should be generic..
 }
 
+#[wasm_bindgen]
+pub struct PathStatistics {
+    pub total_distance: f32,
+    pub nodes_visited_count: u32,
+    pub path_nodes_count: u32,
+}
+
 #[derive(Clone, Copy)]
 pub struct VisitedPoint<S, K> {
     pub score: S,
@@ -90,47 +97,38 @@ pub fn get_neighbours(point: &Point, width: u32, height: u32) -> Vec<u32> {
 
     // top row
     if point.y > 0 {
-        let row_left = (point.y - 1) * width;
-        let row_right = row_left + width - 1;
         let top = index - width;
 
-        if top > row_left {
+        if point.x > 0 {
             neighbours.push(top - 1);
         }
 
         neighbours.push(top);
 
-        if top < row_right {
+        if point.x < width - 1 {
             neighbours.push(top + 1);
         }
     }
 
     // middle row
-    {
-        let row_left = (point.y) * width;
-        let row_right = row_left + width - 1;
-
-        if index > row_left {
-            neighbours.push(index - 1);
-        }
-        if index < row_right {
-            neighbours.push(index + 1);
-        }
+    if point.x > 0 {
+        neighbours.push(index - 1);
+    }
+    if point.x < width - 1 {
+        neighbours.push(index + 1);
     }
 
     // bottom row
-    if point.y < (height - 1) {
-        let row_left = (point.y + 1) * width;
-        let row_right = row_left + width - 1;
+    if point.y < height - 1 {
         let bottom = index + width;
 
-        if bottom > row_left {
+        if point.x > 0 {
             neighbours.push(bottom - 1);
         }
 
         neighbours.push(bottom);
 
-        if bottom < row_right {
+        if point.x < width - 1 {
             neighbours.push(bottom + 1);
         }
     }
