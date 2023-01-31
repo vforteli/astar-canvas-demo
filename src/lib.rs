@@ -40,13 +40,37 @@ impl Board {
         let height = image.get_height();
         let width = image.get_width();
 
+        let mut cell_weights = vec![0.0; (width * height) as usize];
+        for y in 0..height {
+            for x in 0..width {
+                let pixel = image.get_pixel(x, y);
+
+                let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
+                let inverted_brighntess = (hsv.brightness - 1.0).abs();
+
+                let normalized_brighntess = if hsv.brightness < 0.05 {
+                    -1.0
+                } else {
+                    normalize(
+                        0.0,
+                        1.0,
+                        TERRAIN_MIN_WEIGHT as f32,
+                        TERRAIN_MAX_WEIGHT as f32,
+                        inverted_brighntess,
+                    )
+                };
+
+                cell_weights[Point::new(x, y).to_1d_index(width) as usize] = normalized_brighntess;
+            }
+        }
+
         Board {
             width,
             height,
             image,
             frame_data: vec![0; (width * height * 4).try_into().unwrap()],
             start_pixel: None,
-            cell_weights: vec![0.0; (width * height).try_into().unwrap()],
+            cell_weights,
             path_info: None,
         }
     }
@@ -95,23 +119,6 @@ impl Board {
                     self.frame_data[(i + 2) as usize] = pixel.b;
                     self.frame_data[(i + 3) as usize] = 255;
                 }
-
-                let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
-                let inverted_brighntess = (hsv.brightness - 1.0).abs();
-                let normalized_brighntess = if hsv.brightness < 0.05 {
-                    -1.0
-                } else {
-                    normalize(
-                        0.0,
-                        1.0,
-                        TERRAIN_MIN_WEIGHT as f32,
-                        TERRAIN_MAX_WEIGHT as f32,
-                        inverted_brighntess,
-                    )
-                };
-
-                self.cell_weights[Point::new(x, y).to_1d_index(self.width) as usize] =
-                    normalized_brighntess;
             }
         }
 
