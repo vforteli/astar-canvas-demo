@@ -18,6 +18,7 @@ canvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
 
 const pointInfoSpan = document.getElementById("point-info") as HTMLElement
 const pathInfoSpan = document.getElementById("path-info") as HTMLElement
+const multiplierInput = document.getElementById("heuristical-multiplier") as HTMLInputElement
 
 const context = canvas.getContext('2d');
 
@@ -94,8 +95,11 @@ if (context) {
         }
         else {
             to = point
-            const distance = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), 1)
-            pathInfoSpan.innerText = `distance: ${distance?.toFixed(2)}`
+            const multiplier = Number.parseInt(multiplierInput.value) ?? 1
+            const pathStatistics = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
+            pathInfoSpan.innerText = `distance: ${pathStatistics?.total_distance.toFixed(2)}`
+            console.debug(pathStatistics?.path_nodes_count)
+            console.debug(pathStatistics?.nodes_visited_count)
         }
 
         renderImage(context)

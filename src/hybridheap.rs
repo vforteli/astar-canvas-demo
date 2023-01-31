@@ -12,6 +12,7 @@ pub struct HybridHeap<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> {
 }
 
 impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
+    /// Create new hybrid heap with no specified capacity. Stuff will be allocated when pushed
     pub fn new() -> Self {
         HybridHeap {
             items: Vec::new(),
@@ -19,6 +20,7 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
         }
     }
 
+    /// Create hybrid heap with initial capacity
     pub fn with_capacity(capacity: usize) -> Self {
         HybridHeap {
             items: Vec::with_capacity(capacity),

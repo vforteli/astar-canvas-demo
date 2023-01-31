@@ -24,6 +24,10 @@ body {
     border-radius: 5px;
 }
 
+.container .controls input {
+    width: 50px;
+}
+
 #board-canvas {
     border: 1px solid gray;
     border-radius: 5px;

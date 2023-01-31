@@ -4,7 +4,7 @@ pub mod utils;
 
 use std::{convert::TryInto, vec};
 
-use astar::{PathResult, Point};
+use astar::{PathResult, PathStatistics, Point};
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
@@ -154,7 +154,12 @@ impl Board {
 
     /// Calculates path. Call render again after this to get the output...
     /// Returns total weight of path
-    pub fn calculate_path(&mut self, from: Point, to: Point, multiplier: u32) -> Option<f32> {
+    pub fn calculate_path(
+        &mut self,
+        from: Point,
+        to: Point,
+        multiplier: u32,
+    ) -> Option<PathStatistics> {
         self.path_info = find_path(
             from,
             to,
@@ -165,6 +170,12 @@ impl Board {
             &self.cell_weights,
         );
 
-        self.path_info.as_ref().and_then(|v| Some(v.total_distance))
+        self.path_info.as_ref().and_then(|v| {
+            Some(PathStatistics {
+                total_distance: v.total_distance,
+                nodes_visited_count: v.visited_indexes.len() as u32,
+                path_nodes_count: v.path_indexes.len() as u32,
+            })
+        })
     }
 }
