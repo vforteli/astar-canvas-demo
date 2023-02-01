@@ -72,7 +72,7 @@ pub fn calculate_weight(from: &Point, to: &Point, weights: &Vec<f32>, width: u32
         to_weight = to_weight.powi(2).mul(2.0).sqrt();
     }
 
-    to_weight / 2.0 + from_weight / 2.0
+    (to_weight / 2.0 + from_weight / 2.0) * (to_weight / from_weight)
 }
 
 /// Heuristic function... since we have an euclidean space, this will just be the euclidean distance with the minimum terrain weight
@@ -186,7 +186,7 @@ pub fn find_path(
             let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
 
             // wall...
-            if weight < 1.0 {
+            if weight <= 0.0 {
                 continue;
             }
 
