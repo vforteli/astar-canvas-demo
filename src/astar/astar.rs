@@ -71,47 +71,71 @@ pub fn find_path(
             });
         }
 
-        let current_score = g_score[&current_index];
-        let current_point = Point::from_1d_index(width, current_index);
-
-        for neighbour_index in get_neighbours(&current_point, width, height) {
-            let neighbour_point = Point::from_1d_index(width, neighbour_index);
-            let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
-
-            // wall...
-            if weight < 1.0 {
-                continue;
-            }
-
-            let tentative_g_score = current_score.score + weight;
-
-            // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-            // otherwise upsert the new score
-            match g_score.get(&neighbour_index) {
-                Some(p) if (*p).score <= tentative_g_score => continue,
-                _ => g_score.insert(
-                    neighbour_index,
-                    VisitedPoint {
-                        score: tentative_g_score,
-                        came_from_key: current_index,
-                    },
-                ),
-            };
-
-            let tentative_f_score = tentative_g_score
-                + calculate_heuristical_distance(&neighbour_point, &to, multiplier, min_weight);
-
-            // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
-            // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-            match openset.get_value(neighbour_index) {
-                Some(v) if v > tentative_f_score => {
-                    openset.change_value(neighbour_index, tentative_f_score)
-                }
-                _ => openset.push(neighbour_index, tentative_f_score),
-            };
-        }
+        tick(
+            &mut g_score,
+            &mut openset,
+            &to,
+            current_index,
+            width,
+            height,
+            multiplier,
+            min_weight,
+            weights,
+        )
     }
     None
+}
+
+fn tick(
+    g_score: &mut HashMap<u32, VisitedPoint<f32, u32>>,
+    openset: &mut HybridHeap<u32, f32>,
+    to: &Point,
+    current_index: u32,
+    width: u32,
+    height: u32,
+    multiplier: u32,
+    min_weight: f32,
+    weights: &Vec<f32>,
+) {
+    let current_score = g_score[&current_index];
+    let current_point = Point::from_1d_index(width, current_index);
+
+    for neighbour_index in get_neighbours(&current_point, width, height) {
+        let neighbour_point = Point::from_1d_index(width, neighbour_index);
+        let weight = calculate_weight(&current_point, &neighbour_point, &weights, width);
+
+        // wall...
+        if weight < 1.0 {
+            continue;
+        }
+
+        let tentative_g_score = current_score.score + weight;
+
+        // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
+        // otherwise upsert the new score
+        match g_score.get(&neighbour_index) {
+            Some(p) if (*p).score <= tentative_g_score => continue,
+            _ => g_score.insert(
+                neighbour_index,
+                VisitedPoint {
+                    score: tentative_g_score,
+                    came_from_key: current_index,
+                },
+            ),
+        };
+
+        let tentative_f_score = tentative_g_score
+            + calculate_heuristical_distance(&neighbour_point, &to, multiplier, min_weight);
+
+        // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
+        // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
+        match openset.get_value(neighbour_index) {
+            Some(v) if v > tentative_f_score => {
+                openset.change_value(neighbour_index, tentative_f_score)
+            }
+            _ => openset.push(neighbour_index, tentative_f_score),
+        };
+    }
 }
 
 #[cfg(test)]

@@ -15,6 +15,7 @@ use crate::{
 
 const TERRAIN_MIN_WEIGHT: u32 = 1;
 const TERRAIN_MAX_WEIGHT: u32 = 10;
+
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
 #[cfg(feature = "wee_alloc")]
