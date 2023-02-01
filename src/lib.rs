@@ -4,12 +4,12 @@ pub mod utils;
 
 use std::{convert::TryInto, vec};
 
-use astar::{PathResult, PathStatistics, Point};
+use astar::{astar::PathResult, point::Point};
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    astar::find_path,
+    astar::astar::{find_path, PathStatistics},
     utils::{normalize, rgb_to_hsv},
 };
 
