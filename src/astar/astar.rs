@@ -85,8 +85,8 @@ impl FindPath {
     }
 
     pub fn reset(&mut self) {
-        &self.g_score.clear();
-        &self.openset.clear();
+        self.g_score.clear();
+        self.openset.clear();
     }
 
     pub fn visited_points(&self) -> &HashMap<u32, VisitedPoint<f32, u32>> {
@@ -94,7 +94,7 @@ impl FindPath {
     }
 
     pub fn openset_points(&self) -> &HybridHeap<u32, f32> {
-        &&self.openset
+        &self.openset
     }
 
     /// Tick ... specify number of max nodes to process

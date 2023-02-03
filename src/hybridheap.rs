@@ -103,6 +103,11 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
         self.items.is_empty()
     }
 
+    pub fn clear(&mut self) {
+        self.items.clear();
+        self.hashmap.clear();
+    }
+
     fn bubble_up(&mut self, index: usize) {
         let mut index = index;
         let item = self.items[index];
