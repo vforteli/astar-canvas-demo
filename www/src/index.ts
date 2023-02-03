@@ -86,23 +86,39 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
 
 
 if (context) {
+    const tick = () => {
+        const result = board.tick(50)
+        renderImage(context)
+
+        if (result === undefined) {
+            requestAnimationFrame(tick);
+        }
+    };
+
+
     canvas.onclick = e => {
         const point = coordinateToPointy(e.offsetX, e.offsetY)
 
         if (!from) {
             from = point
             board.click_cell(point.x, point.y)
+            renderImage(context)
         }
         else {
             to = point
             const multiplier = Number.parseInt(multiplierInput.value) ?? 1
-            const pathStatistics = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
-            pathInfoSpan.innerText = `distance: ${pathStatistics?.total_distance.toFixed(2)}`
-            console.debug(pathStatistics?.path_nodes_count)
-            console.debug(pathStatistics?.nodes_visited_count)
-        }
 
-        renderImage(context)
+            board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
+
+            tick()
+
+
+
+            // const pathStatistics = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
+            // pathInfoSpan.innerText = `distance: ${pathStatistics?.total_distance.toFixed(2)}`
+            // console.debug(pathStatistics?.path_nodes_count)
+            // console.debug(pathStatistics?.nodes_visited_count)
+        }
     }
 
     canvas.oncontextmenu = e => {

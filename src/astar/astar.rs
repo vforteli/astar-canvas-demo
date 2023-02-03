@@ -32,14 +32,16 @@ pub struct VisitedPoint<S, K> {
 pub struct FindPath {
     from: Point,
     to: Point,
-    to_index: u32,
+    pub to_index: u32,
+    pub from_index: u32,
     width: u32,
     height: u32,
     multiplier: u32,
     min_weight: f32,
-    weights: Vec<f32>,
     openset: HybridHeap<u32, f32>, // openset contains seen nodes which havent yet been visited
     g_score: HashMap<u32, VisitedPoint<f32, u32>>, // g scores contains the currently best scores for visited nodes and from where we ended up here
+    // todo.. hohum.. getter for this?
+    pub path_indexes: Option<HashSet<u32>>, // hohum.. maybe return coordinates instead, since that would better reflect the "public api"
 }
 
 impl FindPath {
@@ -50,7 +52,6 @@ impl FindPath {
         height: u32,
         multiplier: u32,
         min_weight: f32,
-        weights: Vec<f32>,
     ) -> Self {
         let mut openset: HybridHeap<u32, f32> = HybridHeap::with_capacity(1000);
         let mut g_score: HashMap<u32, VisitedPoint<f32, u32>> = HashMap::with_capacity(1000);
@@ -74,19 +75,21 @@ impl FindPath {
             from,
             to,
             to_index,
+            from_index,
             width,
             height,
             multiplier,
             min_weight,
-            weights,
             openset,
             g_score,
+            path_indexes: None,
         }
     }
 
     pub fn reset(&mut self) {
         self.g_score.clear();
         self.openset.clear();
+        self.path_indexes = None;
     }
 
     pub fn visited_points(&self) -> &HashMap<u32, VisitedPoint<f32, u32>> {
@@ -98,64 +101,35 @@ impl FindPath {
     }
 
     /// Tick ... specify number of max nodes to process
-    pub fn tick(&mut self, ticks: u32) {
+    /// Returns None if the path was not found with specified tick count
+    pub fn tick(&mut self, ticks: u32, weights: &Vec<f32>) -> Option<f32> {
+        let mut remaining_ticks = ticks;
         while let Some(current_index) = self.openset.pop() {
-            // if current_index == self.to_index {
-            //     return Some(PathResult {
-            //         from_index,
-            //         to_index,
-            //         total_distance: g_score.get(&to_index).unwrap().score,
-            //         path_indexes: reconstruct_path(&g_score, to_index),
-            //         visited_indexes: g_score,
-            //     });
-            // }
-
-            let current_score = self.g_score[&current_index];
-            let current_point = Point::from_1d_index(self.width, current_index);
-
-            for neighbour_index in get_neighbours(&current_point, self.width, self.height) {
-                let neighbour_point = Point::from_1d_index(self.width, neighbour_index);
-                let weight =
-                    calculate_weight(&current_point, &neighbour_point, &self.weights, self.width);
-
-                // wall...
-                if weight <= 0.0 {
-                    continue;
-                }
-
-                let tentative_g_score = current_score.score + weight;
-
-                // If this neighbour is already processed and the gscore through the current node is not lower, we can skip to the next
-                // otherwise upsert the new score
-                match self.g_score.get(&neighbour_index) {
-                    Some(p) if (*p).score <= tentative_g_score => continue,
-                    _ => self.g_score.insert(
-                        neighbour_index,
-                        VisitedPoint {
-                            score: tentative_g_score,
-                            came_from_key: current_index,
-                        },
-                    ),
-                };
-
-                let tentative_f_score = tentative_g_score
-                    + calculate_heuristical_distance(
-                        &neighbour_point,
-                        &self.to,
-                        self.multiplier,
-                        self.min_weight,
-                    );
-
-                // If the neighbour node is seen for the first time, ie not open and not closed, put it in the openset
-                // We can safely try to decrease the key, if the value is higher or doesnt exist, nothing will happen
-                match self.openset.get_value(neighbour_index) {
-                    Some(v) if v > tentative_f_score => self
-                        .openset
-                        .change_value(neighbour_index, tentative_f_score),
-                    _ => self.openset.push(neighbour_index, tentative_f_score),
-                };
+            if current_index == self.to_index {
+                self.path_indexes = Some(reconstruct_path(&self.g_score, self.to_index));
+                return Some(self.g_score.get(&self.to_index).unwrap().score);
             }
+
+            if remaining_ticks == 0 {
+                return None;
+            }
+
+            tick(
+                &mut self.g_score,
+                &mut self.openset,
+                &self.to,
+                current_index,
+                self.width,
+                self.height,
+                self.multiplier,
+                self.min_weight,
+                weights,
+            );
+
+            remaining_ticks = remaining_ticks - 1;
         }
+
+        None
     }
 }
 
