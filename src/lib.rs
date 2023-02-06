@@ -33,6 +33,7 @@ pub struct Board {
 #[wasm_bindgen]
 impl Board {
     pub fn new() -> Self {
+        console_error_panic_hook::set_once();
         let mut bytes: &[u8] = include_bytes!("../assets/castle.bmp");
         let image = bmp::from_reader(&mut bytes).unwrap();
         let height = image.get_height();
@@ -172,9 +173,9 @@ impl Board {
     }
 
     pub fn tick(&mut self, ticks: u32) -> Option<f32> {
-        self.path_finder
-            .as_mut()
-            .unwrap()
-            .tick(ticks, &self.cell_weights)
+        match self.path_finder.as_mut() {
+            Some(p) => p.tick(ticks, &self.cell_weights),
+            None => Some(-1.0),
+        }
     }
 }

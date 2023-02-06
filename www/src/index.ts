@@ -106,18 +106,10 @@ if (context) {
         }
         else {
             to = point
-            const multiplier = Number.parseInt(multiplierInput.value) ?? 1
 
-            board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
+            board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), Number.parseInt(multiplierInput.value) ?? 1)
 
             tick()
-
-
-
-            // const pathStatistics = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
-            // pathInfoSpan.innerText = `distance: ${pathStatistics?.total_distance.toFixed(2)}`
-            // console.debug(pathStatistics?.path_nodes_count)
-            // console.debug(pathStatistics?.nodes_visited_count)
         }
     }
 

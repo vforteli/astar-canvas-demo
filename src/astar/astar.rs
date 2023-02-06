@@ -30,7 +30,6 @@ pub struct VisitedPoint<S, K> {
 }
 
 pub struct FindPath {
-    from: Point,
     to: Point,
     pub to_index: u32,
     pub from_index: u32,
@@ -72,7 +71,6 @@ impl FindPath {
         );
 
         FindPath {
-            from,
             to,
             to_index,
             from_index,
