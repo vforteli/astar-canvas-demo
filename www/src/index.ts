@@ -10,6 +10,13 @@ const board = Board.new()
 const width = board.width()
 const height = board.height()
 
+// refactor...
+const gridCanvas = document.getElementById("board-canvas-grid") as HTMLCanvasElement
+gridCanvas.height = height * CELL_SIZE
+gridCanvas.width = width * CELL_SIZE
+gridCanvas.style.width = width * (CELL_SIZE / devicePixelRatio) + "px";
+gridCanvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
+
 const canvas = document.getElementById("board-canvas") as HTMLCanvasElement
 canvas.height = height * CELL_SIZE
 canvas.width = width * CELL_SIZE
@@ -21,6 +28,7 @@ const pathInfoSpan = document.getElementById("path-info") as HTMLElement
 const multiplierInput = document.getElementById("heuristical-multiplier") as HTMLInputElement
 
 const context = canvas.getContext('2d');
+const gridContext = gridCanvas.getContext('2d');
 
 type Pointy = {
     x: Readonly<number>,
@@ -60,8 +68,6 @@ const renderImage = (context: CanvasRenderingContext2D) => {
             );
         }
     }
-
-    drawGrid(context)
 }
 
 const drawGrid = (context: CanvasRenderingContext2D) => {
@@ -69,13 +75,13 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
     context.fillStyle = `rgba(255,255,255,0.2)`
     context.lineWidth = 0.1;
 
-    // vertical grid
+    // vertical lines
     for (let col = 0; col < width; col++) {
         context.moveTo(col * CELL_SIZE, 0);
         context.lineTo(col * CELL_SIZE, height * CELL_SIZE);
     }
 
-    // horizontal grid
+    // horizontal lines
     for (let row = 0; row < height; row++) {
         context.moveTo(0, row * CELL_SIZE);
         context.lineTo(width * CELL_SIZE, row * CELL_SIZE);
@@ -128,4 +134,8 @@ if (context) {
     }
 
     renderImage(context)
+}
+
+if (gridContext) {
+    drawGrid(gridContext)
 }
