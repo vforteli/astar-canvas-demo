@@ -8,7 +8,7 @@ use astar::{astar::FindPath, point::Point};
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
-use crate::utils::{normalize, rgb_to_hsv};
+use crate::utils::{image_to_weight_map, normalize, rgb_to_hsv};
 
 const TERRAIN_MIN_WEIGHT: f32 = 1.0;
 const TERRAIN_MAX_WEIGHT: f32 = 10.0;
@@ -38,30 +38,7 @@ impl Board {
         let image = bmp::from_reader(&mut bytes).unwrap();
         let height = image.get_height();
         let width = image.get_width();
-
-        let mut cell_weights = vec![0.0; (width * height) as usize];
-        for y in 0..height {
-            for x in 0..width {
-                let pixel = image.get_pixel(x, y);
-
-                let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
-                let inverted_brighntess = (hsv.brightness - 1.0).abs();
-
-                let normalized_brighntess = if hsv.brightness < 0.05 {
-                    -1.0
-                } else {
-                    normalize(
-                        0.0,
-                        1.0,
-                        TERRAIN_MIN_WEIGHT,
-                        TERRAIN_MAX_WEIGHT,
-                        inverted_brighntess,
-                    )
-                };
-
-                cell_weights[Point::new(x, y).to_1d_index(width) as usize] = normalized_brighntess;
-            }
-        }
+        let cell_weights = image_to_weight_map(&image, TERRAIN_MIN_WEIGHT, TERRAIN_MAX_WEIGHT);
 
         Board {
             width,

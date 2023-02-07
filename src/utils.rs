@@ -1,3 +1,7 @@
+use bmp::Image;
+
+use crate::astar::point::Point;
+
 pub fn set_panic_hook() {
     // When the `console_error_panic_hook` feature is enabled, we can call the
     // `set_panic_hook` function at least once during initialization, and then
@@ -36,4 +40,40 @@ pub fn normalize(
     value: f32,
 ) -> f32 {
     output_min + (value - input_min) * (output_max - output_min) / (input_max - input_min)
+}
+
+pub fn image_to_weight_map(
+    image: &Image,
+    min_output_weight: f32,
+    max_output_weight: f32,
+) -> Vec<f32> {
+    let height = image.get_height();
+    let width = image.get_width();
+
+    let mut cell_weights = vec![0.0; (width * height) as usize];
+
+    for y in 0..height {
+        for x in 0..width {
+            let pixel = image.get_pixel(x, y);
+
+            let hsv = rgb_to_hsv(pixel.r, pixel.g, pixel.b);
+            let inverted_brighntess = (hsv.brightness - 1.0).abs();
+
+            let normalized_brighntess = if hsv.brightness < 0.05 {
+                -1.0
+            } else {
+                normalize(
+                    0.0,
+                    1.0,
+                    min_output_weight,
+                    max_output_weight,
+                    inverted_brighntess,
+                )
+            };
+
+            cell_weights[Point::new(x, y).to_1d_index(width) as usize] = normalized_brighntess;
+        }
+    }
+
+    cell_weights
 }
