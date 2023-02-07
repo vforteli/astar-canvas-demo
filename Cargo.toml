@@ -3,6 +3,9 @@ name = "astar-rust-wasm"
 version = "0.1.0"
 authors = ["Verner Fortelius <verner@fortelius.net>"]
 edition = "2021"
+description = "tinkering with rust, wasm and canvas"
+repository = "https://github.com/vforteli/astar-canvas-demo"
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

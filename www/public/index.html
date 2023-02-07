@@ -12,11 +12,15 @@
 
   <div class="container">
     <div class="controls">
+      <input type="range" id="ticks-per-frame" name="ticks-per-frame" min="1" max="110" value="50" step="10">
       <span id="point-info"></span>
       <span>H* <input type="number" id="heuristical-multiplier" value="1" /></span>
       <span id="path-info"></span>
     </div>
-    <canvas id="board-canvas"></canvas>
+    <div class="board-container">
+      <canvas id="board-canvas"></canvas>
+      <canvas id="board-canvas-grid"></canvas>
+    </div>
   </div>
 
   <script src="./index.js"></script>

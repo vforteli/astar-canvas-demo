@@ -28,7 +28,22 @@ body {
     width: 50px;
 }
 
-#board-canvas {
+.board-container {
+    width: 500px;
+    height: 500px;
     border: 1px solid gray;
+    border-radius: 5px;
+}
+
+#board-canvas {
+    position: absolute;
+    z-index: 2;
+    border-radius: 5px;
+}
+
+#board-canvas-grid {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
     border-radius: 5px;
 }

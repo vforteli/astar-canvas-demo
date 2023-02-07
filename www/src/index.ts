@@ -10,6 +10,13 @@ const board = Board.new()
 const width = board.width()
 const height = board.height()
 
+// refactor...
+const gridCanvas = document.getElementById("board-canvas-grid") as HTMLCanvasElement
+gridCanvas.height = height * CELL_SIZE
+gridCanvas.width = width * CELL_SIZE
+gridCanvas.style.width = width * (CELL_SIZE / devicePixelRatio) + "px";
+gridCanvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
+
 const canvas = document.getElementById("board-canvas") as HTMLCanvasElement
 canvas.height = height * CELL_SIZE
 canvas.width = width * CELL_SIZE
@@ -19,8 +26,10 @@ canvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
 const pointInfoSpan = document.getElementById("point-info") as HTMLElement
 const pathInfoSpan = document.getElementById("path-info") as HTMLElement
 const multiplierInput = document.getElementById("heuristical-multiplier") as HTMLInputElement
+const ticksPerFrameRange = document.getElementById("ticks-per-frame") as HTMLInputElement
 
 const context = canvas.getContext('2d');
+const gridContext = gridCanvas.getContext('2d');
 
 type Pointy = {
     x: Readonly<number>,
@@ -60,8 +69,6 @@ const renderImage = (context: CanvasRenderingContext2D) => {
             );
         }
     }
-
-    drawGrid(context)
 }
 
 const drawGrid = (context: CanvasRenderingContext2D) => {
@@ -69,13 +76,13 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
     context.fillStyle = `rgba(255,255,255,0.2)`
     context.lineWidth = 0.1;
 
-    // vertical grid
+    // vertical lines
     for (let col = 0; col < width; col++) {
         context.moveTo(col * CELL_SIZE, 0);
         context.lineTo(col * CELL_SIZE, height * CELL_SIZE);
     }
 
-    // horizontal grid
+    // horizontal lines
     for (let row = 0; row < height; row++) {
         context.moveTo(0, row * CELL_SIZE);
         context.lineTo(width * CELL_SIZE, row * CELL_SIZE);
@@ -86,30 +93,38 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
 
 
 if (context) {
+    const tick = (ticksPerFrame: number) => {
+        const result = board.tick(ticksPerFrame)
+        renderImage(context)
+
+        if (result === undefined) {
+            requestAnimationFrame(() => tick(ticksPerFrame));
+        }
+    };
+
+
     canvas.onclick = e => {
         const point = coordinateToPointy(e.offsetX, e.offsetY)
 
         if (!from) {
             from = point
-            board.click_cell(point.x, point.y)
+            board.set_from(point.x, point.y)
+            renderImage(context)
         }
         else {
             to = point
-            const multiplier = Number.parseInt(multiplierInput.value) ?? 1
-            const pathStatistics = board.calculate_path(Point.new(from.x, from.y), Point.new(to.x, to.y), multiplier)
-            pathInfoSpan.innerText = `distance: ${pathStatistics?.total_distance.toFixed(2)}`
-            console.debug(pathStatistics?.path_nodes_count)
-            console.debug(pathStatistics?.nodes_visited_count)
-        }
+            board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), Number.parseInt(multiplierInput.value) ?? 1)
 
-        renderImage(context)
+            // todo use option or something more sensible for max speed
+            tick(ticksPerFrameRange.valueAsNumber > 100 ? 1000000 : ticksPerFrameRange.valueAsNumber)
+        }
     }
 
     canvas.oncontextmenu = e => {
         e.preventDefault()
         pathInfoSpan.innerText = `distance: `
         from = coordinateToPointy(e.offsetX, e.offsetY)
-        board.click_cell(from.x, from.y)
+        board.set_from(from.x, from.y)
         renderImage(context)
     }
 
@@ -120,4 +135,8 @@ if (context) {
     }
 
     renderImage(context)
+}
+
+if (gridContext) {
+    drawGrid(gridContext)
 }

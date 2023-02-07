@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 
 use astar_rust_wasm::{
-    astar::{find_path, Point},
+    astar::{astar::find_path, point::Point},
     utils::{normalize, rgb_to_hsv},
 };
 use criterion::{criterion_group, criterion_main, Criterion};
