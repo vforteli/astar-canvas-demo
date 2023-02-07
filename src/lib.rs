@@ -150,7 +150,7 @@ impl Board {
         self.frame_data.as_ptr()
     }
 
-    pub fn click_cell(&mut self, x: u32, y: u32) {
+    pub fn set_from(&mut self, x: u32, y: u32) {
         self.path_finder = None;
         self.start_pixel = Some(Point { x, y });
     }

@@ -107,12 +107,11 @@ if (context) {
 
         if (!from) {
             from = point
-            board.click_cell(point.x, point.y)
+            board.set_from(point.x, point.y)
             renderImage(context)
         }
         else {
             to = point
-
             board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), Number.parseInt(multiplierInput.value) ?? 1)
 
             tick()
@@ -123,12 +122,13 @@ if (context) {
         e.preventDefault()
         pathInfoSpan.innerText = `distance: `
         from = coordinateToPointy(e.offsetX, e.offsetY)
-        board.click_cell(from.x, from.y)
+        board.set_from(from.x, from.y)
         renderImage(context)
     }
 
     canvas.onpointermove = e => {
         const point = coordinateToPointy(e.offsetX, e.offsetY)
+        console.debug(e.offsetX)
         const cellInfo = board.get_cell_info(point.x, point.y)
         pointInfoSpan.innerText = `x: ${point.x}, y: ${point.y}, weight: ${cellInfo?.toFixed(2)}`
     }
