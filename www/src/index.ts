@@ -26,6 +26,7 @@ canvas.style.height = height * (CELL_SIZE / devicePixelRatio) + "px";
 const pointInfoSpan = document.getElementById("point-info") as HTMLElement
 const pathInfoSpan = document.getElementById("path-info") as HTMLElement
 const multiplierInput = document.getElementById("heuristical-multiplier") as HTMLInputElement
+const ticksPerFrameRange = document.getElementById("ticks-per-frame") as HTMLInputElement
 
 const context = canvas.getContext('2d');
 const gridContext = gridCanvas.getContext('2d');
@@ -92,12 +93,12 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
 
 
 if (context) {
-    const tick = () => {
-        const result = board.tick(50)
+    const tick = (ticksPerFrame: number) => {
+        const result = board.tick(ticksPerFrame)
         renderImage(context)
 
         if (result === undefined) {
-            requestAnimationFrame(tick);
+            requestAnimationFrame(() => tick(ticksPerFrame));
         }
     };
 
@@ -114,7 +115,8 @@ if (context) {
             to = point
             board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), Number.parseInt(multiplierInput.value) ?? 1)
 
-            tick()
+            // todo use option or something more sensible for max speed
+            tick(ticksPerFrameRange.valueAsNumber > 100 ? 1000000 : ticksPerFrameRange.valueAsNumber)
         }
     }
 
@@ -128,7 +130,6 @@ if (context) {
 
     canvas.onpointermove = e => {
         const point = coordinateToPointy(e.offsetX, e.offsetY)
-        console.debug(e.offsetX)
         const cellInfo = board.get_cell_info(point.x, point.y)
         pointInfoSpan.innerText = `x: ${point.x}, y: ${point.y}, weight: ${cellInfo?.toFixed(2)}`
     }

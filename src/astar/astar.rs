@@ -108,10 +108,6 @@ impl FindPath {
                 return Some(self.g_score.get(&self.to_index).unwrap().score);
             }
 
-            if remaining_ticks == 0 {
-                return None;
-            }
-
             tick(
                 &mut self.g_score,
                 &mut self.openset,
@@ -125,6 +121,10 @@ impl FindPath {
             );
 
             remaining_ticks = remaining_ticks - 1;
+
+            if remaining_ticks == 0 {
+                return None;
+            }
         }
 
         None
