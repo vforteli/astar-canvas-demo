@@ -2,10 +2,10 @@ pub mod astar;
 pub mod hybridheap;
 pub mod utils;
 
-use std::{convert::TryInto, vec};
+use std::vec;
 
 use astar::{astar::FindPath, point::Point};
-use bmp::Image;
+use utils::image_to_vec;
 use wasm_bindgen::prelude::*;
 
 use crate::utils::image_to_weight_map;
@@ -21,8 +21,10 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub struct Board {
-    image: Image,
     frame_data: Vec<u8>,
+    image_data: Vec<u8>,
+    height: u32,
+    width: u32,
     start_pixel: Option<Point>,
     cell_weights: Vec<f32>,
     path_finder: Option<FindPath>,
@@ -34,13 +36,14 @@ impl Board {
         console_error_panic_hook::set_once();
         let mut bytes: &[u8] = include_bytes!("../assets/castle.bmp");
         let image = bmp::from_reader(&mut bytes).unwrap();
-        let height = image.get_height();
-        let width = image.get_width();
+        let image_data = image_to_vec(&image);
         let cell_weights = image_to_weight_map(&image, TERRAIN_MIN_WEIGHT, TERRAIN_MAX_WEIGHT);
 
         Board {
-            image,
-            frame_data: vec![0; (width * height * 4) as usize],
+            frame_data: vec![0; (image.get_width() * image.get_height() * 4) as usize],
+            image_data,
+            height: image.get_height(),
+            width: image.get_width(),
             start_pixel: None,
             cell_weights,
             path_finder: None,
@@ -48,66 +51,40 @@ impl Board {
     }
 
     pub fn width(&self) -> u32 {
-        self.image.get_width()
+        self.width
     }
 
     pub fn height(&self) -> u32 {
-        self.image.get_height()
+        self.height
     }
 
     pub fn render(&mut self) -> *const u8 {
-        let height = self.image.get_height();
-        let width = self.image.get_width();
+        let width = self.width;
 
-        for y in 0..height {
-            for x in 0..width {
-                let i = (y * width + x) * 4;
-                let pixel = self.image.get_pixel(x, y);
+        self.frame_data.clone_from(&self.image_data);
 
-                if self.path_finder.is_some()
-                    && self.path_finder.as_ref().unwrap().path_indexes.is_some()
-                    && self
-                        .path_finder
-                        .as_ref()
-                        .unwrap()
-                        .path_indexes
-                        .as_ref()
-                        .unwrap()
-                        .contains(&Point::new(x, y).to_1d_index(width))
-                {
+        if let Some(p) = &self.path_finder {
+            for i in p.visited_points().iter().map(|v| v.0 * 4) {
+                self.frame_data[i as usize] =
+                    self.frame_data[i as usize].checked_sub(40).unwrap_or(0);
+                self.frame_data[(i + 1) as usize] = self.frame_data[(i + 1) as usize]
+                    .checked_sub(40)
+                    .unwrap_or(0);
+                self.frame_data[(i + 2) as usize] = self.frame_data[(i + 2) as usize]
+                    .checked_sub(40)
+                    .unwrap_or(0);
+                self.frame_data[(i + 3) as usize] = 255;
+            }
+
+            if let Some(path_indexes) = &p.path_indexes {
+                for i in path_indexes.iter().map(|v| v * 4) {
                     self.frame_data[i as usize] = 100;
                     self.frame_data[(i + 1) as usize] = 100;
                     self.frame_data[(i + 2) as usize] = 100;
                     self.frame_data[(i + 3) as usize] = 255;
-                } else if self.path_finder.is_some()
-                    && self
-                        .path_finder
-                        .as_ref()
-                        .unwrap()
-                        .visited_points()
-                        .contains_key(&Point::new(x, y).to_1d_index(width))
-                {
-                    self.frame_data[i as usize] = pixel.r.checked_sub(40).unwrap_or(pixel.r);
-                    self.frame_data[(i + 1) as usize] = pixel.g.checked_sub(40).unwrap_or(pixel.g);
-                    self.frame_data[(i + 2) as usize] = pixel.b.checked_sub(40).unwrap_or(pixel.b);
-                    self.frame_data[(i + 3) as usize] = 255;
-                } else {
-                    self.frame_data[i as usize] = pixel.r;
-                    self.frame_data[(i + 1) as usize] = pixel.g;
-                    self.frame_data[(i + 2) as usize] = pixel.b;
-                    self.frame_data[(i + 3) as usize] = 255;
                 }
             }
-        }
 
-        if let Some(pixel) = &self.start_pixel {
-            let pixel_index: usize = ((pixel.y * width * 4) + (pixel.x * 4)).try_into().unwrap();
-            self.frame_data[pixel_index] = 0;
-            self.frame_data[pixel_index + 1] = 255;
-            self.frame_data[pixel_index + 2] = 0;
-        }
-
-        if let Some(p) = &self.path_finder {
             self.frame_data[(p.to_index * 4) as usize] = 255;
             self.frame_data[((p.to_index * 4) + 1) as usize] = 0;
             self.frame_data[((p.to_index * 4) + 2) as usize] = 0;
@@ -115,6 +92,13 @@ impl Board {
             self.frame_data[(p.from_index * 4) as usize] = 0;
             self.frame_data[((p.from_index * 4) + 1) as usize] = 255;
             self.frame_data[((p.from_index * 4) + 2) as usize] = 0;
+        }
+
+        if let Some(pixel) = &self.start_pixel {
+            let pixel_index = (pixel.to_1d_index(width) * 4) as usize;
+            self.frame_data[pixel_index] = 0;
+            self.frame_data[pixel_index + 1] = 255;
+            self.frame_data[pixel_index + 2] = 0;
         }
 
         self.frame_data.as_ptr()
@@ -131,7 +115,7 @@ impl Board {
 
     /// Get cell info... currently just the weight
     pub fn get_cell_info(&mut self, x: u32, y: u32) -> Option<f32> {
-        let index = Point::new(x, y).to_1d_index(self.image.get_width());
+        let index = Point::new(x, y).to_1d_index(self.width);
         self.cell_weights.get(index as usize).copied()
     }
 
@@ -139,8 +123,8 @@ impl Board {
         self.path_finder = Some(FindPath::new(
             from,
             to,
-            self.image.get_width(),
-            self.image.get_height(),
+            self.width,
+            self.height,
             multiplier,
             TERRAIN_MIN_WEIGHT,
         ))
