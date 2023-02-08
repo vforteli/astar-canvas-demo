@@ -8,7 +8,7 @@ use astar::{astar::FindPath, point::Point};
 use bmp::Image;
 use wasm_bindgen::prelude::*;
 
-use crate::utils::{image_to_weight_map, normalize, rgb_to_hsv};
+use crate::utils::image_to_weight_map;
 
 const TERRAIN_MIN_WEIGHT: f32 = 1.0;
 const TERRAIN_MAX_WEIGHT: f32 = 10.0;
@@ -21,8 +21,6 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
 pub struct Board {
-    width: u32,
-    height: u32,
     image: Image,
     frame_data: Vec<u8>,
     start_pixel: Option<Point>,
@@ -41,10 +39,8 @@ impl Board {
         let cell_weights = image_to_weight_map(&image, TERRAIN_MIN_WEIGHT, TERRAIN_MAX_WEIGHT);
 
         Board {
-            width,
-            height,
             image,
-            frame_data: vec![0; (width * height * 4).try_into().unwrap()],
+            frame_data: vec![0; (width * height * 4) as usize],
             start_pixel: None,
             cell_weights,
             path_finder: None,
@@ -52,17 +48,20 @@ impl Board {
     }
 
     pub fn width(&self) -> u32 {
-        self.width
+        self.image.get_width()
     }
 
     pub fn height(&self) -> u32 {
-        self.height
+        self.image.get_height()
     }
 
     pub fn render(&mut self) -> *const u8 {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let i = (y * self.width + x) * 4;
+        let height = self.image.get_height();
+        let width = self.image.get_width();
+
+        for y in 0..height {
+            for x in 0..width {
+                let i = (y * width + x) * 4;
                 let pixel = self.image.get_pixel(x, y);
 
                 if self.path_finder.is_some()
@@ -74,7 +73,7 @@ impl Board {
                         .path_indexes
                         .as_ref()
                         .unwrap()
-                        .contains(&Point::new(x, y).to_1d_index(self.width))
+                        .contains(&Point::new(x, y).to_1d_index(width))
                 {
                     self.frame_data[i as usize] = 100;
                     self.frame_data[(i + 1) as usize] = 100;
@@ -86,7 +85,7 @@ impl Board {
                         .as_ref()
                         .unwrap()
                         .visited_points()
-                        .contains_key(&Point::new(x, y).to_1d_index(self.width))
+                        .contains_key(&Point::new(x, y).to_1d_index(width))
                 {
                     self.frame_data[i as usize] = pixel.r.checked_sub(40).unwrap_or(pixel.r);
                     self.frame_data[(i + 1) as usize] = pixel.g.checked_sub(40).unwrap_or(pixel.g);
@@ -102,9 +101,7 @@ impl Board {
         }
 
         if let Some(pixel) = &self.start_pixel {
-            let pixel_index: usize = ((pixel.y * self.width * 4) + (pixel.x * 4))
-                .try_into()
-                .unwrap();
+            let pixel_index: usize = ((pixel.y * width * 4) + (pixel.x * 4)).try_into().unwrap();
             self.frame_data[pixel_index] = 0;
             self.frame_data[pixel_index + 1] = 255;
             self.frame_data[pixel_index + 2] = 0;
@@ -134,7 +131,7 @@ impl Board {
 
     /// Get cell info... currently just the weight
     pub fn get_cell_info(&mut self, x: u32, y: u32) -> Option<f32> {
-        let index = Point::new(x, y).to_1d_index(self.width);
+        let index = Point::new(x, y).to_1d_index(self.image.get_width());
         self.cell_weights.get(index as usize).copied()
     }
 
@@ -142,8 +139,8 @@ impl Board {
         self.path_finder = Some(FindPath::new(
             from,
             to,
-            self.width,
-            self.height,
+            self.image.get_width(),
+            self.image.get_height(),
             multiplier,
             TERRAIN_MIN_WEIGHT,
         ))

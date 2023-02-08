@@ -39,7 +39,6 @@ pub struct FindPath {
     min_weight: f32,
     openset: HybridHeap<u32, f32>, // openset contains seen nodes which havent yet been visited
     g_score: HashMap<u32, VisitedPoint<f32, u32>>, // g scores contains the currently best scores for visited nodes and from where we ended up here
-    // todo.. hohum.. getter for this?
     pub path_indexes: Option<HashSet<u32>>, // hohum.. maybe return coordinates instead, since that would better reflect the "public api"
 }
 
@@ -122,7 +121,7 @@ impl FindPath {
 
             remaining_ticks = remaining_ticks - 1;
 
-            if remaining_ticks == 0 {
+            if remaining_ticks <= 0 {
                 return None;
             }
         }
