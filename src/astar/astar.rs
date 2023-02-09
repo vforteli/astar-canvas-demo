@@ -39,7 +39,6 @@ pub struct FindPath {
     min_weight: f32,
     openset: HybridHeap<u32, f32>, // openset contains seen nodes which havent yet been visited
     g_score: HashMap<u32, VisitedPoint<f32, u32>>, // g scores contains the currently best scores for visited nodes and from where we ended up here
-    // todo.. hohum.. getter for this?
     pub path_indexes: Option<HashSet<u32>>, // hohum.. maybe return coordinates instead, since that would better reflect the "public api"
 }
 
@@ -101,7 +100,7 @@ impl FindPath {
     /// Tick ... specify number of max nodes to process
     /// Returns None if the path was not found with specified tick count
     pub fn tick(&mut self, ticks: u32, weights: &Vec<f32>) -> Option<f32> {
-        let mut remaining_ticks = ticks;
+        let mut remaining_ticks = ticks; // todo wtf, no underflow panic but wrapping? so, apparently wasm is fine with js passing in 0 here and then decreasing it without panicking
         while let Some(current_index) = self.openset.pop() {
             if current_index == self.to_index {
                 self.path_indexes = Some(reconstruct_path(&self.g_score, self.to_index));
@@ -122,7 +121,7 @@ impl FindPath {
 
             remaining_ticks = remaining_ticks - 1;
 
-            if remaining_ticks == 0 {
+            if remaining_ticks <= 0 {
                 return None;
             }
         }

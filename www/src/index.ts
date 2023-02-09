@@ -47,7 +47,8 @@ let to: Pointy | undefined = undefined;
 
 
 const renderImage = (context: CanvasRenderingContext2D) => {
-    const imageDataRaw = new Uint8Array(memory.buffer, board.render(), width * height * 4)
+    board.render()
+    const imageDataRaw = new Uint8Array(memory.buffer, board.frame_data(), width * height * 4)
     // const imageDataRaw = new Uint8ClampedArray(buffer)
 
     for (let row = 0; row < height; row++) {
@@ -93,12 +94,12 @@ const drawGrid = (context: CanvasRenderingContext2D) => {
 
 
 if (context) {
-    const tick = (ticksPerFrame: number) => {
+    const tick = (ticksPerFrame: number, currentTo: Pointy) => {
         const result = board.tick(ticksPerFrame)
         renderImage(context)
 
-        if (result === undefined) {
-            requestAnimationFrame(() => tick(ticksPerFrame));
+        if (result === undefined && currentTo === to) {
+            requestAnimationFrame(() => tick(ticksPerFrame, currentTo));
         }
     };
 
@@ -115,8 +116,9 @@ if (context) {
             to = point
             board.start_path_find(Point.new(from.x, from.y), Point.new(to.x, to.y), Number.parseInt(multiplierInput.value) ?? 1)
 
-            // todo use option or something more sensible for max speed
-            tick(ticksPerFrameRange.valueAsNumber > 100 ? 1000000 : ticksPerFrameRange.valueAsNumber)
+            // 0 here works only because the u32 on rust side breaks down and happily wraps around when decreasing...
+            // actually this should probably panic but i guess this isnt perfect :O
+            tick(ticksPerFrameRange.valueAsNumber > 100 ? 0 : ticksPerFrameRange.valueAsNumber, to)
         }
     }
 

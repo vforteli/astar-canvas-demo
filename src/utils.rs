@@ -77,3 +77,24 @@ pub fn image_to_weight_map(
 
     cell_weights
 }
+
+pub fn image_to_vec(image: &Image) -> Vec<u8> {
+    let height = image.get_height();
+    let width = image.get_width();
+
+    let mut image_data = vec![0; (height * width * 4) as usize];
+
+    for y in 0..height {
+        for x in 0..width {
+            let i = (y * width + x) * 4;
+            let pixel = image.get_pixel(x, y);
+
+            image_data[i as usize] = pixel.r;
+            image_data[(i + 1) as usize] = pixel.g;
+            image_data[(i + 2) as usize] = pixel.b;
+            image_data[(i + 3) as usize] = 255;
+        }
+    }
+
+    image_data
+}
