@@ -100,7 +100,7 @@ impl FindPath {
     /// Tick ... specify number of max nodes to process
     /// Returns None if the path was not found with specified tick count
     pub fn tick(&mut self, ticks: u32, weights: &Vec<f32>) -> Option<f32> {
-        let mut remaining_ticks = ticks;
+        let mut remaining_ticks = ticks; // todo wtf, no underflow panic but wrapping? so, apparently wasm is fine with js passing in 0 here and then decreasing it without panicking
         while let Some(current_index) = self.openset.pop() {
             if current_index == self.to_index {
                 self.path_indexes = Some(reconstruct_path(&self.g_score, self.to_index));

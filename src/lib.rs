@@ -8,7 +8,7 @@ use astar::{astar::FindPath, point::Point};
 use utils::image_to_vec;
 use wasm_bindgen::prelude::*;
 
-use crate::utils::image_to_weight_map;
+use crate::utils::{image_to_weight_map, set_panic_hook};
 
 const TERRAIN_MIN_WEIGHT: f32 = 1.0;
 const TERRAIN_MAX_WEIGHT: f32 = 10.0;
@@ -33,7 +33,7 @@ pub struct Board {
 #[wasm_bindgen]
 impl Board {
     pub fn new() -> Self {
-        console_error_panic_hook::set_once();
+        set_panic_hook();
         let mut bytes: &[u8] = include_bytes!("../assets/castle.bmp");
         let image = bmp::from_reader(&mut bytes).unwrap();
         let image_data = image_to_vec(&image);
@@ -58,7 +58,7 @@ impl Board {
         self.height
     }
 
-    pub fn render(&mut self) -> *const u8 {
+    pub fn render(&mut self) {
         let width = self.width;
 
         self.frame_data.clone_from(&self.image_data);
@@ -100,8 +100,6 @@ impl Board {
             self.frame_data[pixel_index + 1] = 255;
             self.frame_data[pixel_index + 2] = 0;
         }
-
-        self.frame_data.as_ptr()
     }
 
     pub fn frame_data(&self) -> *const u8 {
@@ -127,7 +125,7 @@ impl Board {
             self.height,
             multiplier,
             TERRAIN_MIN_WEIGHT,
-        ))
+        ));
     }
 
     pub fn tick(&mut self, ticks: u32) -> Option<f32> {
