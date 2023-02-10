@@ -59,8 +59,8 @@ const renderImage = (context: CanvasRenderingContext2D) => {
             const g = imageDataRaw[pixelIndex + 1]
             const b = imageDataRaw[pixelIndex + 2]
             const a = imageDataRaw[pixelIndex + 3]
-
-            context.fillStyle = `rgba(${r},${g},${b},1.0)`
+            //${((a ?? 255) / 255.0).toFixed(2)}
+            context.fillStyle = `rgb(${r} ${g} ${b})`
 
             context.fillRect(
                 col * CELL_SIZE,
@@ -74,7 +74,7 @@ const renderImage = (context: CanvasRenderingContext2D) => {
 
 const drawGrid = (context: CanvasRenderingContext2D) => {
     context.beginPath();
-    context.fillStyle = `rgba(255,255,255,0.2)`
+    context.fillStyle = `rgb(255 255 255 / 0.2)`
     context.lineWidth = 0.1;
 
     // vertical lines
