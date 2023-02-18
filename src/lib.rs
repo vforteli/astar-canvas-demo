@@ -64,7 +64,7 @@ impl Board {
         self.frame_data.clone_from(&self.image_data);
 
         if let Some(p) = &self.path_finder {
-            for i in p.visited_points().iter().map(|v| v.0 * 4) {
+            for i in p.visited_points().keys().map(|key| key * 4) {
                 self.frame_data[i as usize] =
                     self.frame_data[i as usize].checked_sub(40).unwrap_or(0);
                 self.frame_data[(i + 1) as usize] = self.frame_data[(i + 1) as usize]
