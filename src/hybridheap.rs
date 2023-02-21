@@ -57,12 +57,7 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
 
     /// Get value of item
     pub fn get_value(&self, key: K) -> Option<V> {
-        self.hashmap
-            .get(&key)
-            .and_then(|k| match self.items.get(*k) {
-                Some(item) => Some(item.value),
-                None => None,
-            })
+        Some(self.items.get(*self.hashmap.get(&key)?)?.value)
     }
 
     /// Push new item with value
@@ -93,10 +88,7 @@ impl<K: Eq + Hash + PartialEq + Copy, V: PartialOrd + Copy> HybridHeap<K, V> {
 
     /// Peek item without removing it
     pub fn peek(&self) -> Option<&K> {
-        match self.items.get(0) {
-            Some(item) => Some(&item.key),
-            None => None,
-        }
+        Some(&self.items.get(0)?.key)
     }
 
     pub fn is_empty(&self) -> bool {
